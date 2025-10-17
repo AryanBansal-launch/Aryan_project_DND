@@ -90,6 +90,7 @@ export interface Company {
     linkedin?: string;
     twitter?: string;
     facebook?: string;
+    website?: string;
   };
   createdAt: string;
   updatedAt: string;
