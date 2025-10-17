@@ -27,7 +27,9 @@ export function formatRelativeTime(date: string | Date): string {
   return `${Math.floor(diffInSeconds / 31536000)} years ago`
 }
 
-export function formatSalary(salary: { min?: number; max?: number; currency: string; period: string }): string {
+export function formatSalary(salary?: { min?: number; max?: number; currency: string; period: string }): string {
+  if (!salary) return 'Salary not specified'
+  
   const { min, max, currency, period } = salary
   const symbol = currency === 'USD' ? '$' : currency
   

@@ -9,6 +9,11 @@ const nextConfig = {
             { hostname: "images.contentstack.io" },
             { hostname: "*-images.contentstack.com" },
           ]),
+      // Allow Google user profile images
+      { 
+        protocol: 'https',
+        hostname: 'lh3.googleusercontent.com',
+      },
     ],
   },
 };

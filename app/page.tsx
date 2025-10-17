@@ -76,7 +76,9 @@ export default function Home() {
   const [searchQuery, setSearchQuery] = useState("");
   const [searchLocation, setSearchLocation] = useState("");
 
-  const formatSalary = (salary: { min?: number; max?: number; currency: string; period: string }) => {
+  const formatSalary = (salary?: { min?: number; max?: number; currency: string; period: string }) => {
+    if (!salary) return 'Salary not specified';
+    
     const { min, max, currency } = salary;
     const symbol = currency === 'USD' ? '$' : currency;
     
