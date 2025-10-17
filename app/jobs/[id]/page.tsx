@@ -5,15 +5,12 @@ import {
   MapPin, 
   Clock, 
   DollarSign, 
-  Building2, 
-  Users, 
-  Calendar,
+  Building2,
   Share2,
   Bookmark,
   ArrowLeft,
   Send,
   Upload,
-  FileText,
   ExternalLink
 } from "lucide-react";
 import { formatSalary, formatRelativeTime, formatDate } from "@/lib/utils";

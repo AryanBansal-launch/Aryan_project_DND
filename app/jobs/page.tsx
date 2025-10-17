@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import { 
   Search, 
   MapPin, 
@@ -8,13 +8,11 @@ import {
   Clock, 
   DollarSign, 
   Building2,
-  ChevronDown,
-  Star,
   Bookmark,
   Share2,
   Eye
 } from "lucide-react";
-import { cn, formatSalary, formatRelativeTime } from "@/lib/utils";
+import { formatSalary, formatRelativeTime } from "@/lib/utils";
 import { Job, JobSearchFilters } from "@/lib/types";
 
 // Mock data for demonstration
@@ -116,7 +114,7 @@ const experienceLevels = ["entry", "mid", "senior", "lead", "executive"];
 const categories = ["Engineering", "Product", "Design", "Marketing", "Sales", "Operations"];
 
 export default function JobsPage() {
-  const [jobs, setJobs] = useState<Job[]>(mockJobs);
+  const [jobs] = useState<Job[]>(mockJobs);
   const [filters, setFilters] = useState<JobSearchFilters>({});
   const [showFilters, setShowFilters] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");

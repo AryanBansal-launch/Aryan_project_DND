@@ -2,7 +2,6 @@
 
 import { useState } from "react";
 import { 
-  User, 
   Mail, 
   Phone, 
   MapPin, 
@@ -11,15 +10,11 @@ import {
   Save,
   X,
   Plus,
-  Trash2,
-  Upload,
   ExternalLink,
-  Briefcase,
-  GraduationCap,
   Award,
   Globe
 } from "lucide-react";
-import { User as UserType, Education, WorkExperience } from "@/lib/types";
+import { User as UserType } from "@/lib/types";
 import { formatDate, getInitials } from "@/lib/utils";
 
 // Mock user data
@@ -110,12 +105,6 @@ export default function ProfilePage() {
   const handleCancel = () => {
     setEditingField(null);
     setEditValue("");
-  };
-
-  const addSkill = (skill: string) => {
-    if (skill && !user.skills.includes(skill)) {
-      setUser(prev => ({ ...prev, skills: [...prev.skills, skill] }));
-    }
   };
 
   const removeSkill = (skill: string) => {

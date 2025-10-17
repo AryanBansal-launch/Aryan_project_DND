@@ -8,13 +8,10 @@ import {
   Building2, 
   Users, 
   TrendingUp,
-  Star,
   ArrowRight,
-  Filter,
   Clock,
   DollarSign
 } from "lucide-react";
-import { cn } from "@/lib/utils";
 
 // Mock data for demonstration
 const featuredJobs = [
@@ -80,7 +77,7 @@ export default function Home() {
   const [searchLocation, setSearchLocation] = useState("");
 
   const formatSalary = (salary: { min?: number; max?: number; currency: string; period: string }) => {
-    const { min, max, currency, period } = salary;
+    const { min, max, currency } = salary;
     const symbol = currency === 'USD' ? '$' : currency;
     
     if (min && max) {

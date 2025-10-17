@@ -1,11 +1,9 @@
 "use client";
 
 import { useState } from "react";
-import { signIn, getSession } from "next-auth/react";
+import { signIn } from "next-auth/react";
 import { 
   Mail, 
-  ArrowRight,
-  UserPlus,
   Loader2
 } from "lucide-react";
 import Link from "next/link";

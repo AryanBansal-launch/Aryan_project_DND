@@ -7,9 +7,6 @@ import {
   XCircle, 
   AlertCircle,
   Calendar,
-  MapPin,
-  Phone,
-  Mail,
   FileText,
   Eye,
   Download,
@@ -102,7 +99,7 @@ const mockJobDetails = {
 };
 
 export default function ApplicationsPage() {
-  const [applications, setApplications] = useState<Application[]>(mockApplications);
+  const [applications] = useState<Application[]>(mockApplications);
   const [selectedApplication, setSelectedApplication] = useState<Application | null>(null);
   const [statusFilter, setStatusFilter] = useState<string>("all");
 

@@ -3,8 +3,6 @@
 import { useState } from "react";
 import { signIn } from "next-auth/react";
 import { 
-  Mail, 
-  ArrowRight,
   UserPlus,
   Loader2
 } from "lucide-react";

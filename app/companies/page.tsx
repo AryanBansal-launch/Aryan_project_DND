@@ -4,13 +4,9 @@ import { useState } from "react";
 import { 
   Search, 
   MapPin, 
-  Building2, 
-  Users, 
-  Calendar,
+  Building2,
   ExternalLink,
-  Star,
-  Filter,
-  ChevronDown
+  Filter
 } from "lucide-react";
 import { Company } from "@/lib/types";
 
@@ -125,7 +121,7 @@ const industries = ["Technology", "Design", "Finance", "Healthcare", "Education"
 const companySizes = ["1-10", "11-50", "51-200", "201-500", "501-1000", "1000+"];
 
 export default function CompaniesPage() {
-  const [companies, setCompanies] = useState<Company[]>(mockCompanies);
+  const [companies] = useState<Company[]>(mockCompanies);
   const [searchQuery, setSearchQuery] = useState("");
   const [selectedIndustry, setSelectedIndustry] = useState("");
   const [selectedSize, setSelectedSize] = useState("");

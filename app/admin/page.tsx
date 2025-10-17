@@ -2,7 +2,6 @@
 
 import { useState } from "react";
 import { 
-  BarChart3, 
   Users, 
   Briefcase, 
   Building2, 
@@ -12,8 +11,7 @@ import {
   Trash2,
   Plus,
   Search,
-  Filter,
-  MoreHorizontal
+  Filter
 } from "lucide-react";
 
 // Mock data for admin dashboard
