@@ -151,6 +151,41 @@ export interface Job {
   contactEmail?: string;
 }
 
+// Contentstack Job type (matches CMS schema)
+export interface ContentstackJob {
+  uid: string;
+  title: string;
+  description: string;
+  requirements: string;
+  responsibilities: string;
+  company: ContentstackCompany[] | ContentstackCompany; // Reference field can be array or single
+  location: string;
+  type: string;
+  experience: string;
+  salary?: {
+    min?: number;
+    max?: number;
+    currency: string;
+    period: string;
+  };
+  benefits?: string[];
+  skills?: Array<{ skill: string; proficiency: string }>;
+  category: string;
+  status: string;
+  posted_at: string;
+  expires_at?: string;
+  applications_count?: number;
+  views_count?: number;
+  is_remote: boolean;
+  is_urgent: boolean;
+  application_url?: string;
+  contact_email?: string;
+  created_at?: string;
+  updated_at?: string;
+  $?: any;
+  _metadata?: any;
+}
+
 export interface User {
   id: string;
   email: string;

@@ -127,3 +127,139 @@ export async function getCompanyByUid(uid: string) {
 
   return null;
 }
+
+// Function to fetch all jobs
+export async function getJobs() {
+  const result = await stack
+    .contentType("job") // Specifying the content type as "job"
+    .entry() // Accessing the entry
+    .query() // Creating a query
+    .find(); // Executing the query
+
+  if (result.entries) {
+    if (process.env.NEXT_PUBLIC_CONTENTSTACK_PREVIEW === 'true') {
+      result.entries.forEach((entry: any) => {
+        contentstack.Utils.addEditableTags(entry as any, 'job', true); // Adding editable tags for live preview if enabled
+      });
+    }
+
+    // Fetch company details for each job
+    const jobsWithCompany = await Promise.all(
+      result.entries.map(async (job: any) => {
+        let companyUid: string | null = null;
+        
+        // Determine the company UID from different possible structures
+        if (job.company) {
+          if (Array.isArray(job.company) && job.company.length > 0) {
+            // Array of references
+            if (typeof job.company[0] === 'string') {
+              companyUid = job.company[0];
+            } else if (job.company[0].uid) {
+              companyUid = job.company[0].uid;
+            }
+          } else if (typeof job.company === 'string') {
+            // Direct UID string
+            companyUid = job.company;
+          } else if (typeof job.company === 'object' && !Array.isArray(job.company) && job.company.uid) {
+            // Object with uid property
+            companyUid = job.company.uid;
+          }
+        }
+        
+        // Fetch the full company data if we have a UID
+        if (companyUid) {
+          try {
+            const company = await getCompanyByUid(companyUid);
+            if (company) {
+              job.company = [company]; // Store as array for consistency
+            }
+          } catch (error) {
+            console.error(`Failed to fetch company ${companyUid}:`, error);
+          }
+        } else {
+          // Create a placeholder company for jobs without company data
+          job.company = [{
+            uid: 'placeholder',
+            title: 'Company (Not Specified)',
+            description: 'Company information not available',
+            location: job.location || 'Location not specified',
+            industry: 'Various',
+            size: 'Not specified',
+            created_at: job.created_at,
+            updated_at: job.updated_at,
+          }];
+        }
+        
+        return job;
+      })
+    );
+
+    return jobsWithCompany; // Returning all job entries with company data
+  }
+
+  return [];
+}
+
+// Function to fetch a single job by UID
+export async function getJobByUid(uid: string) {
+  const result = await stack
+    .contentType("job") // Specifying the content type as "job"
+    .entry(uid) // Accessing specific entry by UID
+    .fetch(); // Fetching the entry
+
+  if (result) {
+    if (process.env.NEXT_PUBLIC_CONTENTSTACK_PREVIEW === 'true') {
+      contentstack.Utils.addEditableTags(result as any, 'job', true); // Adding editable tags for live preview if enabled
+    }
+
+    // Fetch company details if present
+    const job = result as any;
+    let companyUid: string | null = null;
+    
+    // Determine the company UID from different possible structures
+    if (job.company) {
+      if (Array.isArray(job.company) && job.company.length > 0) {
+        // Array of references
+        if (typeof job.company[0] === 'string') {
+          companyUid = job.company[0];
+        } else if (job.company[0].uid) {
+          companyUid = job.company[0].uid;
+        }
+      } else if (typeof job.company === 'string') {
+        // Direct UID string
+        companyUid = job.company;
+      } else if (typeof job.company === 'object' && !Array.isArray(job.company) && job.company.uid) {
+        // Object with uid property
+        companyUid = job.company.uid;
+      }
+    }
+    
+    // Fetch the full company data if we have a UID
+    if (companyUid) {
+      try {
+        const company = await getCompanyByUid(companyUid);
+        if (company) {
+          job.company = [company]; // Store as array for consistency
+        }
+      } catch (error) {
+        console.error(`Failed to fetch company ${companyUid}:`, error);
+      }
+    } else {
+      // Create a placeholder company for jobs without company data
+      job.company = [{
+        uid: 'placeholder',
+        title: 'Company (Not Specified)',
+        description: 'Company information not available',
+        location: job.location || 'Location not specified',
+        industry: 'Various',
+        size: 'Not specified',
+        created_at: job.created_at,
+        updated_at: job.updated_at,
+      }];
+    }
+
+    return result; // Returning the fetched job
+  }
+
+  return null;
+}

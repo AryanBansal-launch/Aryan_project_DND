@@ -4,6 +4,8 @@
  */
 
 const https = require('https');
+const dotenv = require('dotenv');
+dotenv.config();
 
 // ⚠️ CONFIGURE THESE VALUES
 const CONFIG = {

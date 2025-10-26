@@ -6,6 +6,8 @@
  */
 
 const https = require('https');
+const dotenv = require('dotenv');
+dotenv.config();
 
 // ⚠️ CONFIGURE THESE VALUES
 const CONFIG = {
@@ -15,28 +17,28 @@ const CONFIG = {
   REGION: process.env.NEXT_PUBLIC_CONTENTSTACK_REGION,
   CONTENT_TYPE_UID: 'job', // Your job content type UID
   
-  // ✅ Company UIDs from seed-companies.js run
+  // ✅ Company UIDs from seed-companies.js run (UPDATED)
   COMPANY_UIDS: {
-    techcorp: 'blt1cc8851c7499854e',
-    datasystems: 'blt92230df0f5e6d15d',
-    cloudnine: 'bltb072659160cd33ed',
-    financehub: 'bltb146f9387bc7f7ef',
-    healthtech: 'bltab7e1afc421f7ee6',
-    edulearn: 'bltc369d9eb900b1a39',
-    greenenergy: 'blt09c41f512efd5095',
-    retailnext: 'bltafce18f53789cccd',
-    cybershield: 'blt6c9411473fca3105',
-    ailabs: 'bltfa6c5a61b0d7eb15',
-    mediastream: 'blt8ef008eff1eb4c41',
-    logisticshub: 'blt890f8a161d07fa89',
-    gameforge: 'blte737ec45764b91ef',
-    robotech: 'blta8891bac277b772d',
-    socialconnect: 'bltb293885a2c8b4d29',
-    biomed: 'blt514165cfb2babaff',
-    travelease: 'bltd2815f7c265f4607',
-    foodtech: 'blte9fbcf70932d99b4',
-    spaceventures: 'blt31fb8b2221becceb',
-    proptech: 'blt4350eec7083681b5'
+    techcorp: 'blt58e250e5a8a7c00e',
+    datasystems: 'blt82c762d7f7e9883c',
+    cloudnine: 'blte6013aded4a4486b',
+    financehub: 'blte02aa653e27a1d84',
+    healthtech: 'blt84b48a4b14bc9a87',
+    edulearn: 'blt2335586257d735e6',
+    greenenergy: 'bltccf66d208803a8b7',
+    retailnext: 'bltd54970bb546133a7',
+    cybershield: 'blt382208067c6f2936',
+    ailabs: 'bltf1c944aee310562f',
+    mediastream: 'blt86f59bcc13c3f8f7',
+    logisticshub: 'blt66ccd881ee32e3d4',
+    gameforge: 'blta9d3117dca4e9c7b',
+    robotech: 'blta2278a37ec40b5aa',
+    socialconnect: 'bltcc408418539bbac2',
+    biomed: 'bltd0dd15df091beaf6',
+    travelease: 'blt73aad477cec34158',
+    foodtech: 'bltf236432802eebe49',
+    spaceventures: 'blte01da6be8b000a75',
+    proptech: 'bltae500b43bae954f9'
   }
 };
 
@@ -798,7 +800,13 @@ function publishEntry(entryUid) {
       entry: {
         environments: [CONFIG.ENVIRONMENT],
         locales: ['en-us']
-      }
+      },
+      // Include referenced content types (company)
+      rules: {
+        approvals: false
+      },
+      scheduled_at: null,
+      publish_with_reference: true
     });
 
     const options = {
