@@ -117,19 +117,28 @@ export default function JobDetailClient({ job }: JobDetailClientProps) {
               {/* Description */}
               <div className="mb-6">
                 <h2 className="text-lg font-semibold text-gray-900 mb-3">Job Description</h2>
-                <p className="text-gray-700 whitespace-pre-line">{job.description}</p>
+                <div 
+                  className="text-gray-700 prose max-w-none"
+                  dangerouslySetInnerHTML={{ __html: job.description }}
+                />
               </div>
 
               {/* Requirements */}
               <div className="mb-6">
                 <h2 className="text-lg font-semibold text-gray-900 mb-3">Requirements</h2>
-                <div className="text-gray-700 whitespace-pre-line">{job.requirements}</div>
+                <div 
+                  className="text-gray-700 prose max-w-none"
+                  dangerouslySetInnerHTML={{ __html: job.requirements }}
+                />
               </div>
 
               {/* Responsibilities */}
               <div className="mb-6">
                 <h2 className="text-lg font-semibold text-gray-900 mb-3">Responsibilities</h2>
-                <div className="text-gray-700 whitespace-pre-line">{job.responsibilities}</div>
+                <div 
+                  className="text-gray-700 prose max-w-none"
+                  dangerouslySetInnerHTML={{ __html: job.responsibilities }}
+                />
               </div>
 
               {/* Skills */}

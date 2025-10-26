@@ -41,12 +41,17 @@ export default function JobsClient({ jobs }: JobsClientProps) {
     setSearchLocation("");
   };
 
+  // Helper function to strip HTML tags for search
+  const stripHtml = (html: string) => {
+    return html.replace(/<[^>]*>/g, '');
+  };
+
   // Filter and search jobs
   const filteredJobs = jobs.filter(job => {
     const matchesSearch = !searchQuery || 
       job.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
       job.company.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      job.description.toLowerCase().includes(searchQuery.toLowerCase());
+      stripHtml(job.description).toLowerCase().includes(searchQuery.toLowerCase());
     
     const matchesLocation = !searchLocation || 
       job.location.toLowerCase().includes(searchLocation.toLowerCase()) ||
@@ -248,7 +253,10 @@ export default function JobsClient({ jobs }: JobsClientProps) {
                           </div>
                         )}
                       </div>
-                      <p className="text-gray-700 mb-3 line-clamp-2">{job.description}</p>
+                      <div 
+                        className="text-gray-700 mb-3 line-clamp-2"
+                        dangerouslySetInnerHTML={{ __html: job.description }}
+                      />
                       <div className="flex flex-wrap gap-2 mb-4">
                         {job.skills.slice(0, 4).map((skill, index) => (
                           <span key={index} className="bg-gray-100 text-gray-700 text-xs px-2 py-1 rounded">
