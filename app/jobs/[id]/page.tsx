@@ -66,9 +66,12 @@ function transformJob(csJob: ContentstackJob): Job {
   };
 }
 
-export default async function JobDetailPage({ params }: { params: { id: string } }) {
+export default async function JobDetailPage({ params }: { params: Promise<{ id: string }> }) {
+  // Await params in Next.js 15
+  const { id } = await params;
+  
   // Fetch job from Contentstack CMS
-  const csJob = await getJobByUid(params.id);
+  const csJob = await getJobByUid(id);
 
   if (!csJob) {
     notFound();

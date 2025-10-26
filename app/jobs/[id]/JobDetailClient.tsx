@@ -4,7 +4,6 @@ import { useState } from "react";
 import { 
   MapPin, 
   Clock, 
-  DollarSign, 
   Building2,
   Share2,
   Bookmark,
@@ -13,7 +12,7 @@ import {
   Upload,
   ExternalLink
 } from "lucide-react";
-import { formatSalary, formatRelativeTime, formatDate } from "@/lib/utils";
+import { formatSalary, formatRelativeTime } from "@/lib/utils";
 import { Job } from "@/lib/types";
 
 interface JobDetailClientProps {
