@@ -51,13 +51,20 @@ export default function Navigation({ navigationData }: NavigationProps) {
   // Use CMS data if available, otherwise fallback to hardcoded
   const brandName = navigationData?.brand_name || "JobDekho";
   
-  const navItems = navigationData?.nav_items || [
+  const allNavItems = navigationData?.nav_items || [
     { label: "Home", link: "/", icon: "Search" },
     { label: "Jobs", link: "/jobs", icon: "Briefcase" },
     { label: "Companies", link: "/companies", icon: "Building2" },
-    { label: "Applications", link: "/applications", icon: "FileText" },
-    { label: "Profile", link: "/profile", icon: "User" },
+    { label: "Applications", link: "/applications", icon: "FileText", requireAuth: true },
+    { label: "Profile", link: "/profile", icon: "User", requireAuth: true },
   ];
+
+  // Filter nav items based on authentication
+  const navItems = allNavItems.filter(item => {
+    // For items from CMS, check if link is /applications or /profile
+    const requiresAuth = item.link === '/applications' || item.link === '/profile';
+    return !requiresAuth || session;
+  });
 
   const handleSignOut = () => {
     signOut({ callbackUrl: "/" });
