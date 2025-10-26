@@ -9,10 +9,10 @@ const https = require('https');
 
 // ⚠️ CONFIGURE THESE VALUES
 const CONFIG = {
-  API_KEY: 'blt8eb0db9489b71b45',
-  MANAGEMENT_TOKEN: 'cs659ce2bad1b335df97013bbe',
-  ENVIRONMENT: 'preview', // or 'production'
-  REGION: 'us', // 'us', 'eu', 'azure-na', etc.
+  API_KEY: process.env.NEXT_PUBLIC_CONTENTSTACK_API_KEY,
+  MANAGEMENT_TOKEN: process.env.NEXT_PUBLIC_CONTENTSTACK_MANAGEMENT_TOKEN,
+  ENVIRONMENT: process.env.NEXT_PUBLIC_CONTENTSTACK_ENVIRONMENT,
+  REGION: process.env.NEXT_PUBLIC_CONTENTSTACK_REGION,
   CONTENT_TYPE_UID: 'job', // Your job content type UID
   
   // ✅ Company UIDs from seed-companies.js run
