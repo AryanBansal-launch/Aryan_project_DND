@@ -5,8 +5,9 @@ import {
   Search, 
   MapPin, 
   Building2,
-  ExternalLink,
-  Filter
+  Filter,
+  Linkedin,
+  Globe
 } from "lucide-react";
 import { Company } from "@/lib/types";
 
@@ -181,10 +182,10 @@ export default function CompaniesClient({ companies }: CompaniesClientProps) {
                       href={company.socialMedia.linkedin}
                       target="_blank"
                       rel="noopener noreferrer"
-                      className="text-gray-400 hover:text-gray-600"
+                      className="text-blue-600 hover:text-blue-700"
                       title="LinkedIn"
                     >
-                      <ExternalLink className="w-4 h-4" />
+                      <Linkedin className="w-4 h-4" />
                     </a>
                   )}
                   {company.socialMedia?.website && (
@@ -192,10 +193,10 @@ export default function CompaniesClient({ companies }: CompaniesClientProps) {
                       href={company.socialMedia.website}
                       target="_blank"
                       rel="noopener noreferrer"
-                      className="text-gray-400 hover:text-gray-600"
+                      className="text-gray-600 hover:text-gray-700"
                       title="Website"
                     >
-                      <ExternalLink className="w-4 h-4" />
+                      <Globe className="w-4 h-4" />
                     </a>
                   )}
                 </div>
