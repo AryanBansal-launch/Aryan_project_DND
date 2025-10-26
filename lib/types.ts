@@ -96,6 +96,31 @@ export interface Company {
   updatedAt: string;
 }
 
+// Contentstack Company type (matches CMS schema)
+export interface ContentstackCompany {
+  uid: string;
+  title: string;
+  description: string;
+  logo?: File | null;
+  website?: string;
+  location: string;
+  industry: string;
+  size: string;
+  founded?: string;
+  benefits?: string[];
+  culture?: string;
+  social_media?: {
+    linkedin?: string;
+    twitter?: string;
+    facebook?: string;
+    website?: string;
+  };
+  created_at?: string;
+  updated_at?: string;
+  $?: any;
+  _metadata?: any;
+}
+
 export interface Job {
   id: string;
   title: string;

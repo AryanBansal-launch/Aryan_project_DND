@@ -88,3 +88,42 @@ export async function getPage(url: string) {
     return entry; // Returning the fetched entry
   }
 }
+
+// Function to fetch all companies
+export async function getCompanies() {
+  const result = await stack
+    .contentType("company") // Specifying the content type as "company"
+    .entry() // Accessing the entry
+    .query() // Creating a query
+    .find(); // Executing the query
+
+  if (result.entries) {
+    if (process.env.NEXT_PUBLIC_CONTENTSTACK_PREVIEW === 'true') {
+      result.entries.forEach(entry => {
+        contentstack.Utils.addEditableTags(entry as any, 'company', true); // Adding editable tags for live preview if enabled
+      });
+    }
+
+    return result.entries; // Returning all company entries
+  }
+
+  return [];
+}
+
+// Function to fetch a single company by UID
+export async function getCompanyByUid(uid: string) {
+  const result = await stack
+    .contentType("company") // Specifying the content type as "company"
+    .entry(uid) // Accessing specific entry by UID
+    .fetch(); // Fetching the entry
+
+  if (result) {
+    if (process.env.NEXT_PUBLIC_CONTENTSTACK_PREVIEW === 'true') {
+      contentstack.Utils.addEditableTags(result as any, 'company', true); // Adding editable tags for live preview if enabled
+    }
+
+    return result; // Returning the fetched company
+  }
+
+  return null;
+}
