@@ -1,0 +1,263 @@
+{
+  "content_type": {
+    "title": "Homepage",
+    "uid": "homepage",
+    "description": "Homepage content and configuration",
+    "options": {
+      "is_page": false,
+      "singleton": true
+    },
+    "schema": [
+      {
+        "data_type": "text",
+        "display_name": "Title",
+        "field_metadata": {
+          "_default": true,
+          "version": 3,
+          "description": "Title for this homepage entry (for CMS identification)"
+        },
+        "mandatory": true,
+        "uid": "title",
+        "unique": false,
+        "multiple": false,
+        "non_localizable": false
+      },
+      {
+        "data_type": "group",
+        "display_name": "Hero Section",
+        "field_metadata": {},
+        "schema": [
+          {
+            "data_type": "text",
+            "display_name": "Main Title",
+            "uid": "main_title",
+            "field_metadata": {
+              "description": "Main headline on homepage",
+              "default_value": "Find Your Dream Job"
+            },
+            "mandatory": true,
+            "unique": false,
+            "multiple": false
+          },
+          {
+            "data_type": "text",
+            "display_name": "Subtitle",
+            "uid": "subtitle",
+            "field_metadata": {
+              "description": "Supporting text below main title",
+              "multiline": true
+            },
+            "mandatory": false,
+            "unique": false,
+            "multiple": false
+          },
+          {
+            "data_type": "text",
+            "display_name": "Search Job Placeholder",
+            "uid": "search_job_placeholder",
+            "field_metadata": {
+              "default_value": "Job title, keywords, or company"
+            },
+            "mandatory": false,
+            "unique": false,
+            "multiple": false
+          },
+          {
+            "data_type": "text",
+            "display_name": "Search Location Placeholder",
+            "uid": "search_location_placeholder",
+            "field_metadata": {
+              "default_value": "City, state, or remote"
+            },
+            "mandatory": false,
+            "unique": false,
+            "multiple": false
+          },
+          {
+            "data_type": "text",
+            "display_name": "Search Button Text",
+            "uid": "search_button_text",
+            "field_metadata": {
+              "default_value": "Search Jobs"
+            },
+            "mandatory": false,
+            "unique": false,
+            "multiple": false
+          }
+        ],
+        "uid": "hero_section",
+        "mandatory": false,
+        "unique": false,
+        "multiple": false
+      },
+      {
+        "data_type": "group",
+        "display_name": "Stats Section",
+        "field_metadata": {},
+        "schema": [
+          {
+            "data_type": "group",
+            "display_name": "Stat Items",
+            "uid": "stat_items",
+            "field_metadata": {},
+            "schema": [
+              {
+                "data_type": "text",
+                "display_name": "Label",
+                "uid": "label",
+                "mandatory": true
+              },
+              {
+                "data_type": "text",
+                "display_name": "Value",
+                "uid": "value",
+                "mandatory": true
+              },
+              {
+                "data_type": "text",
+                "display_name": "Icon",
+                "uid": "icon",
+                "field_metadata": {
+                  "description": "Lucide icon name (e.g., Briefcase, Building2, Users, TrendingUp)"
+                },
+                "mandatory": true
+              }
+            ],
+            "mandatory": false,
+            "multiple": true
+          }
+        ],
+        "uid": "stats_section",
+        "mandatory": false,
+        "unique": false,
+        "multiple": false
+      },
+      {
+        "data_type": "group",
+        "display_name": "Featured Jobs Section",
+        "field_metadata": {},
+        "schema": [
+          {
+            "data_type": "text",
+            "display_name": "Section Title",
+            "uid": "section_title",
+            "field_metadata": {
+              "default_value": "Featured Jobs"
+            },
+            "mandatory": false
+          },
+          {
+            "data_type": "text",
+            "display_name": "View All Text",
+            "uid": "view_all_text",
+            "field_metadata": {
+              "default_value": "View All Jobs"
+            },
+            "mandatory": false
+          }
+        ],
+        "uid": "featured_jobs_section",
+        "mandatory": false,
+        "unique": false,
+        "multiple": false
+      },
+      {
+        "data_type": "group",
+        "display_name": "Top Companies Section",
+        "field_metadata": {},
+        "schema": [
+          {
+            "data_type": "text",
+            "display_name": "Section Title",
+            "uid": "section_title",
+            "field_metadata": {
+              "default_value": "Top Companies"
+            },
+            "mandatory": false
+          },
+          {
+            "data_type": "text",
+            "display_name": "Description",
+            "uid": "description",
+            "field_metadata": {
+              "multiline": true,
+              "default_value": "Join thousands of professionals working at industry-leading companies"
+            },
+            "mandatory": false
+          }
+        ],
+        "uid": "top_companies_section",
+        "mandatory": false,
+        "unique": false,
+        "multiple": false
+      },
+      {
+        "data_type": "group",
+        "display_name": "CTA Section",
+        "field_metadata": {},
+        "schema": [
+          {
+            "data_type": "text",
+            "display_name": "Title",
+            "uid": "title",
+            "field_metadata": {
+              "default_value": "Ready to Advance Your Career?"
+            },
+            "mandatory": false
+          },
+          {
+            "data_type": "text",
+            "display_name": "Description",
+            "uid": "description",
+            "field_metadata": {
+              "multiline": true,
+              "default_value": "Join thousands of professionals who have found their dream jobs through our platform"
+            },
+            "mandatory": false
+          },
+          {
+            "data_type": "text",
+            "display_name": "Primary Button Text",
+            "uid": "primary_button_text",
+            "field_metadata": {
+              "default_value": "Start Job Search"
+            },
+            "mandatory": false
+          },
+          {
+            "data_type": "text",
+            "display_name": "Primary Button Link",
+            "uid": "primary_button_link",
+            "field_metadata": {
+              "default_value": "/jobs"
+            },
+            "mandatory": false
+          },
+          {
+            "data_type": "text",
+            "display_name": "Secondary Button Text",
+            "uid": "secondary_button_text",
+            "field_metadata": {
+              "default_value": "Post a Job"
+            },
+            "mandatory": false
+          },
+          {
+            "data_type": "text",
+            "display_name": "Secondary Button Link",
+            "uid": "secondary_button_link",
+            "field_metadata": {
+              "default_value": "/post-job"
+            },
+            "mandatory": false
+          }
+        ],
+        "uid": "cta_section",
+        "mandatory": false,
+        "unique": false,
+        "multiple": false
+      }
+    ]
+  }
+}
+

@@ -151,6 +151,55 @@ export interface Job {
   contactEmail?: string;
 }
 
+// Contentstack Homepage type
+export interface ContentstackHomepage {
+  uid: string;
+  title: string;
+  hero_section: {
+    main_title: string;
+    subtitle: string;
+    search_job_placeholder: string;
+    search_location_placeholder: string;
+    search_button_text: string;
+  };
+  stats_section: {
+    stat_items: Array<{
+      label: string;
+      value: string;
+      icon: string;
+    }>;
+  };
+  featured_jobs_section: {
+    section_title: string;
+    view_all_text: string;
+  };
+  top_companies_section: {
+    section_title: string;
+    description: string;
+  };
+  cta_section: {
+    title: string;
+    description: string;
+    primary_button_text: string;
+    primary_button_link: string;
+    secondary_button_text: string;
+    secondary_button_link: string;
+  };
+}
+
+// Contentstack Navigation type
+export interface ContentstackNavigation {
+  uid: string;
+  title: string;
+  brand_name: string;
+  logo?: any;
+  nav_items: Array<{
+    label: string;
+    link: string;
+    icon?: string;
+  }>;
+}
+
 // Contentstack Job type (matches CMS schema)
 export interface ContentstackJob {
   uid: string;

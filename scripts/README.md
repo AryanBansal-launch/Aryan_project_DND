@@ -67,15 +67,26 @@ const CONFIG = {
 ### Step 2: Run the Scripts
 
 ```bash
+# Seed navigation (run once)
+node scripts/seed-navigation.js
+
+# Seed homepage content (run once)
+node scripts/seed-homepage.js
+
 # Seed 20 companies
 node scripts/seed-companies.js
 
-# Seed 20 jobs
+# Seed 20 jobs (after companies)
 node scripts/seed-jobs.js
 
 # Seed 20 blog posts
 node scripts/seed-blogs.js
 ```
+
+**Important Order:**
+1. Run `seed-navigation.js` and `seed-homepage.js` first (one-time setup)
+2. Run `seed-companies.js` before `seed-jobs.js` (jobs reference companies)
+3. Run `seed-blogs.js` anytime
 
 ## 📊 What Happens?
 

@@ -263,3 +263,45 @@ export async function getJobByUid(uid: string) {
 
   return null;
 }
+
+// Function to fetch homepage content (singleton)
+export async function getHomepage() {
+  const result = await stack
+    .contentType("homepage")
+    .entry()
+    .query()
+    .find();
+
+  if (result.entries && result.entries.length > 0) {
+    const entry = result.entries[0];
+    
+    if (process.env.NEXT_PUBLIC_CONTENTSTACK_PREVIEW === 'true') {
+      contentstack.Utils.addEditableTags(entry as any, 'homepage', true);
+    }
+
+    return entry;
+  }
+
+  return null;
+}
+
+// Function to fetch navigation content (singleton)
+export async function getNavigation() {
+  const result = await stack
+    .contentType("navigation")
+    .entry()
+    .query()
+    .find();
+
+  if (result.entries && result.entries.length > 0) {
+    const entry = result.entries[0];
+    
+    if (process.env.NEXT_PUBLIC_CONTENTSTACK_PREVIEW === 'true') {
+      contentstack.Utils.addEditableTags(entry as any, 'navigation', true);
+    }
+
+    return entry;
+  }
+
+  return null;
+}

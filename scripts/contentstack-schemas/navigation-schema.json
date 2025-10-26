@@ -1,0 +1,88 @@
+{
+  "content_type": {
+    "title": "Navigation",
+    "uid": "navigation",
+    "description": "Navigation configuration and branding",
+    "options": {
+      "is_page": false,
+      "singleton": true
+    },
+    "schema": [
+      {
+        "data_type": "text",
+        "display_name": "Title",
+        "field_metadata": {
+          "_default": true,
+          "version": 3,
+          "description": "Title for this navigation entry (for CMS identification)"
+        },
+        "mandatory": true,
+        "uid": "title",
+        "unique": false,
+        "multiple": false,
+        "non_localizable": false
+      },
+      {
+        "data_type": "text",
+        "display_name": "Brand Name",
+        "uid": "brand_name",
+        "field_metadata": {
+          "description": "Name displayed in the navigation bar",
+          "default_value": "JobDekho"
+        },
+        "mandatory": true,
+        "unique": false,
+        "multiple": false
+      },
+      {
+        "data_type": "file",
+        "display_name": "Logo",
+        "uid": "logo",
+        "field_metadata": {
+          "description": "Brand logo (optional, will use icon if not provided)"
+        },
+        "mandatory": false,
+        "unique": false,
+        "multiple": false
+      },
+      {
+        "data_type": "group",
+        "display_name": "Navigation Items",
+        "uid": "nav_items",
+        "field_metadata": {},
+        "schema": [
+          {
+            "data_type": "text",
+            "display_name": "Label",
+            "uid": "label",
+            "field_metadata": {
+              "description": "Display text for the navigation link"
+            },
+            "mandatory": true
+          },
+          {
+            "data_type": "text",
+            "display_name": "Link",
+            "uid": "link",
+            "field_metadata": {
+              "description": "URL path (e.g., /jobs, /companies)"
+            },
+            "mandatory": true
+          },
+          {
+            "data_type": "text",
+            "display_name": "Icon",
+            "uid": "icon",
+            "field_metadata": {
+              "description": "Lucide icon name (e.g., Briefcase, Building2)"
+            },
+            "mandatory": false
+          }
+        ],
+        "mandatory": false,
+        "multiple": true
+      }
+    ]
+  }
+}
+
