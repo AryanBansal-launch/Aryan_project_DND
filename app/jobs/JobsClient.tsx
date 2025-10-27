@@ -1,6 +1,7 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
+import { useSearchParams } from "next/navigation";
 import Link from "next/link";
 import { 
   Search, 
@@ -25,11 +26,23 @@ interface JobsClientProps {
 }
 
 export default function JobsClient({ jobs }: JobsClientProps) {
+  const searchParams = useSearchParams();
+  const companyFromUrl = searchParams.get("company");
+  
   const [filters, setFilters] = useState<JobSearchFilters>({});
   const [showFilters, setShowFilters] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
   const [searchLocation, setSearchLocation] = useState("");
   const [sortBy, setSortBy] = useState("relevance");
+  const [companyFilter, setCompanyFilter] = useState(companyFromUrl || "");
+
+  // Update company filter when URL param changes
+  useEffect(() => {
+    if (companyFromUrl) {
+      setCompanyFilter(companyFromUrl);
+      setShowFilters(true); // Show filters when coming from company page
+    }
+  }, [companyFromUrl]);
 
   const handleFilterChange = (key: keyof JobSearchFilters, value: any) => {
     setFilters(prev => ({ ...prev, [key]: value }));
@@ -39,6 +52,7 @@ export default function JobsClient({ jobs }: JobsClientProps) {
     setFilters({});
     setSearchQuery("");
     setSearchLocation("");
+    setCompanyFilter("");
   };
 
   // Helper function to strip HTML tags for search
@@ -57,12 +71,15 @@ export default function JobsClient({ jobs }: JobsClientProps) {
       job.location.toLowerCase().includes(searchLocation.toLowerCase()) ||
       (job.isRemote && searchLocation.toLowerCase().includes("remote"));
     
+    const matchesCompany = !companyFilter || 
+      job.company.name.toLowerCase() === companyFilter.toLowerCase();
+    
     const matchesType = !filters.type?.length || filters.type.includes(job.type);
     const matchesExperience = !filters.experience?.length || filters.experience.includes(job.experience);
     const matchesCategory = !filters.category?.length || filters.category.includes(job.category);
     const matchesRemote = filters.isRemote === undefined || job.isRemote === filters.isRemote;
 
-    return matchesSearch && matchesLocation && matchesType && matchesExperience && matchesCategory && matchesRemote;
+    return matchesSearch && matchesLocation && matchesCompany && matchesType && matchesExperience && matchesCategory && matchesRemote;
   });
 
   // Sort jobs
@@ -191,6 +208,26 @@ export default function JobsClient({ jobs }: JobsClientProps) {
             </div>
           )}
         </div>
+
+        {/* Company Filter Banner */}
+        {companyFilter && (
+          <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 mb-6">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center space-x-2">
+                <Building2 className="w-5 h-5 text-blue-600" />
+                <span className="text-blue-900 font-medium">
+                  Showing jobs from: <span className="font-bold">{companyFilter}</span>
+                </span>
+              </div>
+              <button
+                onClick={() => setCompanyFilter("")}
+                className="text-blue-600 hover:text-blue-700 text-sm font-medium"
+              >
+                Clear Filter
+              </button>
+            </div>
+          </div>
+        )}
 
         {/* Results Header */}
         <div className="flex items-center justify-between mb-6">

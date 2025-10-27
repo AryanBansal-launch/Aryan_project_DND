@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { useRouter } from "next/navigation";
 import { 
   Search, 
   MapPin, 
@@ -19,6 +20,7 @@ interface CompaniesClientProps {
 }
 
 export default function CompaniesClient({ companies }: CompaniesClientProps) {
+  const router = useRouter();
   const [searchQuery, setSearchQuery] = useState("");
   const [selectedIndustry, setSelectedIndustry] = useState("");
   const [selectedSize, setSelectedSize] = useState("");
@@ -38,6 +40,11 @@ export default function CompaniesClient({ companies }: CompaniesClientProps) {
     setSearchQuery("");
     setSelectedIndustry("");
     setSelectedSize("");
+  };
+
+  const handleViewJobs = (companyName: string) => {
+    // Navigate to jobs page with company filter
+    router.push(`/jobs?company=${encodeURIComponent(companyName)}`);
   };
 
   return (
@@ -173,7 +180,10 @@ export default function CompaniesClient({ companies }: CompaniesClientProps) {
               )}
 
               <div className="flex items-center justify-between">
-                <button className="text-blue-600 hover:text-blue-700 font-medium text-sm">
+                <button
+                  onClick={() => handleViewJobs(company.name)}
+                  className="text-blue-600 hover:text-blue-700 font-medium text-sm hover:underline"
+                >
                   View Jobs
                 </button>
                 <div className="flex items-center space-x-2">

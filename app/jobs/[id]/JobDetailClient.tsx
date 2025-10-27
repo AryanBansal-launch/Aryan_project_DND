@@ -1,6 +1,7 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useRef, useEffect } from "react";
+import { useSession } from "next-auth/react";
 import { 
   MapPin, 
   Clock, 
@@ -10,7 +11,8 @@ import {
   ArrowLeft,
   Send,
   Upload,
-  ExternalLink
+  ExternalLink,
+  X
 } from "lucide-react";
 import { formatSalary, formatRelativeTime } from "@/lib/utils";
 import { Job } from "@/lib/types";
@@ -20,7 +22,9 @@ interface JobDetailClientProps {
 }
 
 export default function JobDetailClient({ job }: JobDetailClientProps) {
+  const { data: session } = useSession();
   const [showApplicationForm, setShowApplicationForm] = useState(false);
+  const [isSubmitting, setIsSubmitting] = useState(false);
   const [applicationData, setApplicationData] = useState({
     coverLetter: "",
     resume: null as File | null,
@@ -30,16 +34,77 @@ export default function JobDetailClient({ job }: JobDetailClientProps) {
     additionalInfo: ""
   });
 
+  const formRef = useRef<HTMLDivElement>(null);
+
+  // Scroll to form when it opens
+  useEffect(() => {
+    if (showApplicationForm && formRef.current) {
+      formRef.current.scrollIntoView({ behavior: "smooth", block: "start" });
+    }
+  }, [showApplicationForm]);
+
   const handleInputChange = (field: string, value: string | File | null) => {
     setApplicationData(prev => ({ ...prev, [field]: value }));
   };
 
-  const handleSubmitApplication = (e: React.FormEvent) => {
+  const handleSubmitApplication = async (e: React.FormEvent) => {
     e.preventDefault();
-    console.log("Submitting application:", applicationData);
-    // In a real app, this would submit to an API
-    alert("Application submitted successfully!");
-    setShowApplicationForm(false);
+    
+    if (!session?.user) {
+      alert("You must be logged in to submit an application.");
+      return;
+    }
+
+    setIsSubmitting(true);
+
+    try {
+      // Prepare application data
+      const submissionData = {
+        jobId: job.id,
+        jobTitle: job.title,
+        companyName: job.company.name,
+        userEmail: session.user.email || "",
+        userName: session.user.name || "User",
+        coverLetter: applicationData.coverLetter,
+        portfolio: applicationData.portfolio,
+        expectedSalary: applicationData.expectedSalary,
+        availability: applicationData.availability,
+        additionalInfo: applicationData.additionalInfo,
+        resumeFileName: applicationData.resume?.name || "resume.pdf"
+      };
+
+      // Call API to submit application
+      const response = await fetch("/api/applications/submit", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify(submissionData),
+      });
+
+      const result = await response.json();
+
+      if (response.ok) {
+        alert(`✅ ${result.message}\n\nApplication ID: ${result.applicationId}`);
+        setShowApplicationForm(false);
+        // Reset form
+        setApplicationData({
+          coverLetter: "",
+          resume: null,
+          portfolio: "",
+          expectedSalary: "",
+          availability: "",
+          additionalInfo: ""
+        });
+      } else {
+        alert(`❌ Failed to submit application: ${result.error}`);
+      }
+    } catch (error) {
+      console.error("Application submission error:", error);
+      alert("❌ An error occurred while submitting your application. Please try again.");
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
   return (
@@ -170,8 +235,17 @@ export default function JobDetailClient({ job }: JobDetailClientProps) {
 
             {/* Application Form */}
             {showApplicationForm && (
-              <div className="bg-white rounded-lg shadow-sm border p-6">
-                <h2 className="text-xl font-semibold text-gray-900 mb-4">Apply for this Position</h2>
+              <div ref={formRef} className="bg-white rounded-lg shadow-sm border-2 border-blue-500 p-6 mt-6">
+                <div className="flex items-center justify-between mb-4">
+                  <h2 className="text-xl font-semibold text-gray-900">Apply for this Position</h2>
+                  <button
+                    type="button"
+                    onClick={() => setShowApplicationForm(false)}
+                    className="text-gray-400 hover:text-gray-600"
+                  >
+                    <X className="w-5 h-5" />
+                  </button>
+                </div>
                 <form onSubmit={handleSubmitApplication} className="space-y-4">
                   <div>
                     <label className="block text-sm font-medium text-gray-700 mb-1">
@@ -206,7 +280,7 @@ export default function JobDetailClient({ job }: JobDetailClientProps) {
 
                   <div>
                     <label className="block text-sm font-medium text-gray-700 mb-1">
-                      Portfolio/Website
+                      Portfolio/Website (Optional)
                     </label>
                     <input
                       type="url"
@@ -260,15 +334,26 @@ export default function JobDetailClient({ job }: JobDetailClientProps) {
                   <div className="flex items-center space-x-4">
                     <button
                       type="submit"
-                      className="bg-blue-600 hover:bg-blue-700 text-white px-6 py-3 rounded-md font-medium flex items-center"
+                      disabled={isSubmitting}
+                      className="bg-blue-600 hover:bg-blue-700 text-white px-6 py-3 rounded-md font-medium flex items-center disabled:bg-blue-400 disabled:cursor-not-allowed"
                     >
-                      <Send className="w-5 h-5 mr-2" />
-                      Submit Application
+                      {isSubmitting ? (
+                        <>
+                          <div className="w-5 h-5 mr-2 border-2 border-white border-t-transparent rounded-full animate-spin" />
+                          Submitting...
+                        </>
+                      ) : (
+                        <>
+                          <Send className="w-5 h-5 mr-2" />
+                          Submit Application
+                        </>
+                      )}
                     </button>
                     <button
                       type="button"
                       onClick={() => setShowApplicationForm(false)}
-                      className="text-gray-600 hover:text-gray-800 font-medium"
+                      disabled={isSubmitting}
+                      className="text-gray-600 hover:text-gray-800 font-medium disabled:text-gray-400 disabled:cursor-not-allowed"
                     >
                       Cancel
                     </button>
@@ -301,14 +386,16 @@ export default function JobDetailClient({ job }: JobDetailClientProps) {
 
             <div className="bg-white rounded-lg shadow-sm border p-6">
               <h2 className="text-lg font-semibold text-gray-900 mb-4">Quick Apply</h2>
-              {!showApplicationForm && (
-                <button
-                  onClick={() => setShowApplicationForm(true)}
-                  className="w-full bg-blue-600 hover:bg-blue-700 text-white px-4 py-3 rounded-md font-medium"
-                >
-                  Apply Now
-                </button>
-              )}
+              <button
+                onClick={() => setShowApplicationForm(!showApplicationForm)}
+                className={`w-full px-4 py-3 rounded-md font-medium ${
+                  showApplicationForm
+                    ? "bg-gray-200 text-gray-700 hover:bg-gray-300"
+                    : "bg-blue-600 hover:bg-blue-700 text-white"
+                }`}
+              >
+                {showApplicationForm ? "Close Application Form" : "Apply Now"}
+              </button>
               {job.applicationUrl && (
                 <a
                   href={job.applicationUrl}
