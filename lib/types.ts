@@ -96,6 +96,31 @@ export interface Company {
   updatedAt: string;
 }
 
+// Contentstack Company type (matches CMS schema)
+export interface ContentstackCompany {
+  uid: string;
+  title: string;
+  description: string;
+  logo?: File | null;
+  website?: string;
+  location: string;
+  industry: string;
+  size: string;
+  founded?: string;
+  benefits?: string[];
+  culture?: string;
+  social_media?: {
+    linkedin?: string;
+    twitter?: string;
+    facebook?: string;
+    website?: string;
+  };
+  created_at?: string;
+  updated_at?: string;
+  $?: any;
+  _metadata?: any;
+}
+
 export interface Job {
   id: string;
   title: string;
@@ -124,6 +149,90 @@ export interface Job {
   isUrgent: boolean;
   applicationUrl?: string;
   contactEmail?: string;
+}
+
+// Contentstack Homepage type
+export interface ContentstackHomepage {
+  uid: string;
+  title: string;
+  hero_section: {
+    main_title: string;
+    subtitle: string;
+    search_job_placeholder: string;
+    search_location_placeholder: string;
+    search_button_text: string;
+  };
+  stats_section: {
+    stat_items: Array<{
+      label: string;
+      value: string;
+      icon: string;
+    }>;
+  };
+  featured_jobs_section: {
+    section_title: string;
+    view_all_text: string;
+  };
+  top_companies_section: {
+    section_title: string;
+    description: string;
+  };
+  cta_section: {
+    title: string;
+    description: string;
+    primary_button_text: string;
+    primary_button_link: string;
+    secondary_button_text: string;
+    secondary_button_link: string;
+  };
+}
+
+// Contentstack Navigation type
+export interface ContentstackNavigation {
+  uid: string;
+  title: string;
+  brand_name: string;
+  logo?: any;
+  nav_items: Array<{
+    label: string;
+    link: string;
+    icon?: string;
+  }>;
+}
+
+// Contentstack Job type (matches CMS schema)
+export interface ContentstackJob {
+  uid: string;
+  title: string;
+  description: string;
+  requirements: string;
+  responsibilities: string;
+  company: ContentstackCompany[] | ContentstackCompany; // Reference field can be array or single
+  location: string;
+  type: string;
+  experience: string;
+  salary?: {
+    min?: number;
+    max?: number;
+    currency: string;
+    period: string;
+  };
+  benefits?: string[];
+  skills?: Array<{ skill: string; proficiency: string }>;
+  category: string;
+  status: string;
+  posted_at: string;
+  expires_at?: string;
+  applications_count?: number;
+  views_count?: number;
+  is_remote: boolean;
+  is_urgent: boolean;
+  application_url?: string;
+  contact_email?: string;
+  created_at?: string;
+  updated_at?: string;
+  $?: any;
+  _metadata?: any;
 }
 
 export interface User {

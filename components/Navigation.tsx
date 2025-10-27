@@ -20,20 +20,51 @@ import {
   Settings
 } from "lucide-react";
 import { cn, getInitials } from "@/lib/utils";
+import { ContentstackNavigation } from "@/lib/types";
 
-export default function Navigation() {
+// Icon mapping for CMS icon names
+const iconMap: { [key: string]: any } = {
+  Search,
+  Briefcase,
+  Building2,
+  User,
+  FileText,
+  Bell,
+  Menu,
+  X,
+  LogIn,
+  UserPlus,
+  LogOut,
+  Settings
+};
+
+interface NavigationProps {
+  navigationData: ContentstackNavigation | null;
+}
+
+export default function Navigation({ navigationData }: NavigationProps) {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const [isUserMenuOpen, setIsUserMenuOpen] = useState(false);
   const pathname = usePathname();
   const { data: session, status } = useSession();
 
-  const navItems = [
-    { href: "/", label: "Home", icon: Search },
-    { href: "/jobs", label: "Jobs", icon: Briefcase },
-    { href: "/companies", label: "Companies", icon: Building2 },
-    { href: "/applications", label: "Applications", icon: FileText },
-    { href: "/profile", label: "Profile", icon: User },
+  // Use CMS data if available, otherwise fallback to hardcoded
+  const brandName = navigationData?.brand_name || "JobDekho";
+  
+  const allNavItems = navigationData?.nav_items || [
+    { label: "Home", link: "/", icon: "Search" },
+    { label: "Jobs", link: "/jobs", icon: "Briefcase" },
+    { label: "Companies", link: "/companies", icon: "Building2" },
+    { label: "Applications", link: "/applications", icon: "FileText", requireAuth: true },
+    { label: "Profile", link: "/profile", icon: "User", requireAuth: true },
   ];
+
+  // Filter nav items based on authentication
+  const navItems = allNavItems.filter(item => {
+    // For items from CMS, check if link is /applications or /profile
+    const requiresAuth = item.link === '/applications' || item.link === '/profile';
+    return !requiresAuth || session;
+  });
 
   const handleSignOut = () => {
     signOut({ callbackUrl: "/" });
@@ -50,7 +81,7 @@ export default function Navigation() {
               <div className="w-8 h-8 bg-blue-600 rounded-lg flex items-center justify-center">
                 <Briefcase className="w-5 h-5 text-white" />
               </div>
-              <span className="text-xl font-bold text-gray-900">JobPortal</span>
+              <span className="text-xl font-bold text-gray-900">{brandName}</span>
             </Link>
           </div>
 
@@ -58,13 +89,13 @@ export default function Navigation() {
           <div className="hidden md:block">
             <div className="ml-10 flex items-baseline space-x-4">
               {navItems.map((item) => {
-                const Icon = item.icon;
-                const isActive = pathname === item.href;
+                const Icon = iconMap[item.icon || 'Briefcase'] || Briefcase;
+                const isActive = pathname === item.link;
                 
                 return (
                   <Link
-                    key={item.href}
-                    href={item.href}
+                    key={item.link}
+                    href={item.link}
                     className={cn(
                       "flex items-center space-x-2 px-3 py-2 rounded-md text-sm font-medium transition-colors",
                       isActive
@@ -185,13 +216,13 @@ export default function Navigation() {
           <div className="md:hidden">
             <div className="px-2 pt-2 pb-3 space-y-1 sm:px-3 border-t">
               {navItems.map((item) => {
-                const Icon = item.icon;
-                const isActive = pathname === item.href;
+                const Icon = iconMap[item.icon || 'Briefcase'] || Briefcase;
+                const isActive = pathname === item.link;
                 
                 return (
                   <Link
-                    key={item.href}
-                    href={item.href}
+                    key={item.link}
+                    href={item.link}
                     className={cn(
                       "flex items-center space-x-2 px-3 py-2 rounded-md text-base font-medium",
                       isActive
