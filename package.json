@@ -20,6 +20,7 @@
   "dependencies": {
     "@contentstack/delivery-sdk": "^4.10.0",
     "@contentstack/live-preview-utils": "^4.0.2",
+    "@neondatabase/serverless": "^1.0.2",
     "@timbenniks/contentstack-endpoints": "^1.0.16",
     "clsx": "^2.0.0",
     "date-fns": "^2.30.0",
