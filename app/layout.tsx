@@ -27,7 +27,7 @@ export default async function RootLayout({
           <Navigation navigationData={navigationData as ContentstackNavigation | null} />
           <main className="min-h-screen">
             {children}
-            <script src="https://chatbot-marketplace-try.contentstackapps.com/chatbot-widget.js?site_key=demo-site" async></script>
+            <script src="https://chatbot-marketplace-try.contentstackapps.com/chatbot-widget.js?site_key=site-1763408244725-z9kudn" async></script>
           </main>
         </SessionProvider>
       </body>
