@@ -4,31 +4,14 @@ export async function GET(request: NextRequest) {
   try {
     const webhookUrl = "https://webhook.site/345f95b7-da09-44c2-8f6b-2dc246c2af34";
 
-    const response = await fetch(webhookUrl, {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify({
-        message: "Test request from Next.js API",
-        timestamp: new Date().toISOString(),
-      }),
-    });
+    const response = await fetch(webhookUrl);
 
-    const responseText = await response.text();
-    let responseData;
-    
-    try {
-      responseData = JSON.parse(responseText);
-    } catch {
-      responseData = responseText;
-    }
+    const data = await response.json();
 
     return NextResponse.json({
       success: true,
       status: response.status,
-      statusText: response.statusText,
-      data: responseData,
+      data: data,
     });
   } catch (error) {
     console.error("Fetch error:", error);
