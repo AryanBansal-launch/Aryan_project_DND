@@ -11,7 +11,14 @@ export async function GET(request: NextRequest) {
       },
     });
 
-    const data = await response.json();
+    const responseText = await response.text();
+    let data;
+    
+    try {
+      data = JSON.parse(responseText);
+    } catch {
+      data = responseText;
+    }
 
     return NextResponse.json({
       success: true,
