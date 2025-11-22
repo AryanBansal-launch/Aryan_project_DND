@@ -47,7 +47,7 @@ export const authOptions: NextAuthOptions = {
     signIn: "/login",
   },
   callbacks: {
-    async signIn({ user, account, profile }) {
+    async signIn({ account }) {
       // Allow Google OAuth sign in
       if (account?.provider === "google") {
         return true;
@@ -99,10 +99,10 @@ export const authOptions: NextAuthOptions = {
   debug: process.env.NODE_ENV === 'development',
   // Add error handling for JWT decryption failures
   events: {
-    async signIn({ user, account, profile, isNewUser }) {
+    async signIn() {
       // Log sign in events
     },
-    async signOut({ session, token }) {
+    async signOut() {
       // Log sign out events
     },
   },

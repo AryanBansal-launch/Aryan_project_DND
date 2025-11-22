@@ -34,7 +34,7 @@ function AnimatedCounter({ value, duration = 2000 }: { value: string; duration?:
   };
 
   useEffect(() => {
-    const { number, suffix, hasCommas } = parseValue(value);
+    const { number } = parseValue(value);
     
     if (isNaN(number)) {
       // If not a number, just display the value as-is
@@ -78,13 +78,14 @@ function AnimatedCounter({ value, duration = 2000 }: { value: string; duration?:
       { threshold: 0.5 }
     );
 
-    if (elementRef.current) {
-      observer.observe(elementRef.current);
+    const currentElement = elementRef.current;
+    if (currentElement) {
+      observer.observe(currentElement);
     }
 
     return () => {
-      if (elementRef.current) {
-        observer.unobserve(elementRef.current);
+      if (currentElement) {
+        observer.unobserve(currentElement);
       }
     };
   }, [value, duration, hasAnimated]);

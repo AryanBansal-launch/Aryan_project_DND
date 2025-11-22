@@ -151,8 +151,10 @@ export async function getJobs() {
     .find(); // Executing the query
 
   if (result.entries) {
+    const entries = result.entries;
+    
     if (process.env.NEXT_PUBLIC_CONTENTSTACK_PREVIEW === 'true') {
-      result.entries.forEach((entry: any) => {
+      entries.forEach((entry: any) => {
         contentstack.Utils.addEditableTags(entry as any, 'job', true); // Adding editable tags for live preview if enabled
       });
     }
@@ -160,7 +162,7 @@ export async function getJobs() {
     // Fetch company details for each job
     // Use Promise.allSettled to handle failures gracefully
     const jobsWithCompanyResults = await Promise.allSettled(
-      result.entries.map(async (job: any) => {
+      entries.map(async (job: any) => {
         let companyUid: string | null = null;
         
         // Determine the company UID from different possible structures
@@ -225,10 +227,18 @@ export async function getJobs() {
         return promiseResult.value;
       } else {
         // If job processing failed completely, return the original job with placeholder company
-        const originalJob = result.entries[index];
-        originalJob.company = [createPlaceholderCompany(originalJob, null)];
-        console.error(`Failed to process job ${originalJob.uid}:`, promiseResult.reason);
-        return originalJob;
+        const originalJob = entries[index] as any;
+        if (originalJob) {
+          originalJob.company = [createPlaceholderCompany(originalJob, null)];
+          console.error(`Failed to process job ${originalJob.uid}:`, promiseResult.reason);
+          return originalJob;
+        }
+        // Fallback if entry doesn't exist - create a minimal job object
+        return {
+          uid: `error-${index}`,
+          title: 'Job (Error Loading)',
+          company: [createPlaceholderCompany({}, null)],
+        };
       }
     });
 
