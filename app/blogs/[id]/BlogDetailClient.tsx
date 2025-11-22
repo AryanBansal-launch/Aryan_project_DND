@@ -15,12 +15,14 @@ import {
   Linkedin
 } from "lucide-react";
 import { Blog } from "@/lib/types";
+import LanguageSwitcher from "@/components/LanguageSwitcher";
 
 interface BlogDetailClientProps {
   blog: Blog;
+  currentLocale?: string;
 }
 
-export default function BlogDetailClient({ blog }: BlogDetailClientProps) {
+export default function BlogDetailClient({ blog, currentLocale }: BlogDetailClientProps) {
   const [copied, setCopied] = useState(false);
 
   const handleShare = async (platform?: string) => {
@@ -48,14 +50,17 @@ export default function BlogDetailClient({ blog }: BlogDetailClientProps) {
   return (
     <div className="min-h-screen bg-gray-50">
       <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        {/* Back Button */}
-        <Link 
-          href="/blogs"
-          className="inline-flex items-center text-gray-600 hover:text-gray-900 mb-6 transition-colors"
-        >
-          <ArrowLeft className="w-4 h-4 mr-2" />
-          Back to Blogs
-        </Link>
+        {/* Back Button and Language Switcher */}
+        <div className="flex items-center justify-between mb-6">
+          <Link 
+            href="/blogs"
+            className="inline-flex items-center text-gray-600 hover:text-gray-900 transition-colors"
+          >
+            <ArrowLeft className="w-4 h-4 mr-2" />
+            Back to Blogs
+          </Link>
+          <LanguageSwitcher currentLocale={currentLocale} />
+        </div>
 
         {/* Article */}
         <article className="bg-white rounded-lg shadow-sm border overflow-hidden">

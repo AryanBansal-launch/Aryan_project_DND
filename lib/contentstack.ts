@@ -365,8 +365,20 @@ export async function getNavigation() {
 }
 
 // Function to fetch all blog posts
-export async function getBlogs() {
-  const result = await stack
+export async function getBlogs(locale?: string) {
+  // Create a stack instance with locale if provided
+  const stackInstance = locale 
+    ? contentstack.stack({
+        apiKey: process.env.NEXT_PUBLIC_CONTENTSTACK_API_KEY as string,
+        deliveryToken: process.env.NEXT_PUBLIC_CONTENTSTACK_DELIVERY_TOKEN as string,
+        environment: process.env.NEXT_PUBLIC_CONTENTSTACK_ENVIRONMENT as string,
+        region: region ? region : process.env.NEXT_PUBLIC_CONTENTSTACK_REGION as any,
+        host: process.env.NEXT_PUBLIC_CONTENTSTACK_CONTENT_DELIVERY || endpoints && endpoints.contentDelivery,
+        locale: locale,
+      })
+    : stack;
+
+  const result = await stackInstance
     .contentType("blog_post")
     .entry()
     .query()
@@ -386,8 +398,20 @@ export async function getBlogs() {
 }
 
 // Function to fetch a single blog post by UID
-export async function getBlogByUid(uid: string) {
-  const result = await stack
+export async function getBlogByUid(uid: string, locale?: string) {
+  // Create a stack instance with locale if provided
+  const stackInstance = locale 
+    ? contentstack.stack({
+        apiKey: process.env.NEXT_PUBLIC_CONTENTSTACK_API_KEY as string,
+        deliveryToken: process.env.NEXT_PUBLIC_CONTENTSTACK_DELIVERY_TOKEN as string,
+        environment: process.env.NEXT_PUBLIC_CONTENTSTACK_ENVIRONMENT as string,
+        region: region ? region : process.env.NEXT_PUBLIC_CONTENTSTACK_REGION as any,
+        host: process.env.NEXT_PUBLIC_CONTENTSTACK_CONTENT_DELIVERY || endpoints && endpoints.contentDelivery,
+        locale: locale,
+      })
+    : stack;
+
+  const result = await stackInstance
     .contentType("blog_post")
     .entry(uid)
     .fetch();

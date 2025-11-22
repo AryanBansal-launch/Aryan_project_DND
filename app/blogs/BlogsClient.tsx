@@ -13,12 +13,14 @@ import {
 } from "lucide-react";
 import { Blog } from "@/lib/types";
 import { formatRelativeTime } from "@/lib/utils";
+import LanguageSwitcher from "@/components/LanguageSwitcher";
 
 interface BlogsClientProps {
   blogs: Blog[];
+  currentLocale?: string;
 }
 
-export default function BlogsClient({ blogs }: BlogsClientProps) {
+export default function BlogsClient({ blogs, currentLocale }: BlogsClientProps) {
   const [searchQuery, setSearchQuery] = useState("");
   const [selectedCategory, setSelectedCategory] = useState<string>("");
   const [showFilters, setShowFilters] = useState(false);
@@ -47,9 +49,12 @@ export default function BlogsClient({ blogs }: BlogsClientProps) {
     <div className="min-h-screen bg-gray-50">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         {/* Header */}
-        <div className="mb-8">
-          <h1 className="text-3xl font-bold text-gray-900 mb-2">Blog & Insights</h1>
-          <p className="text-gray-600">Discover career tips, industry news, and expert insights</p>
+        <div className="mb-8 flex items-start justify-between">
+          <div>
+            <h1 className="text-3xl font-bold text-gray-900 mb-2">Blog & Insights</h1>
+            <p className="text-gray-600">Discover career tips, industry news, and expert insights</p>
+          </div>
+          <LanguageSwitcher currentLocale={currentLocale} />
         </div>
 
         {/* Search Bar */}

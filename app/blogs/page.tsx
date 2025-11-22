@@ -1,6 +1,8 @@
 import { Suspense } from "react";
+import { headers, cookies } from "next/headers";
 import { getBlogs } from "@/lib/contentstack";
 import { Blog, ContentstackBlog } from "@/lib/types";
+import { detectLocale } from "@/lib/utils";
 import BlogsClient from "./BlogsClient";
 
 // Helper function to transform Contentstack blog to Blog type
@@ -22,15 +24,22 @@ function transformBlog(csBlog: ContentstackBlog): Blog {
 }
 
 export default async function BlogsPage() {
-  // Fetch blogs from Contentstack CMS
-  const csBlogs = await getBlogs();
+  // Detect locale: check cookie first (user preference), then Accept-Language header
+  const cookieStore = await cookies();
+  const cookieLocale = cookieStore.get("locale")?.value;
+  const headersList = await headers();
+  const acceptLanguage = headersList.get("accept-language");
+  const locale = detectLocale(cookieLocale, acceptLanguage);
+
+  // Fetch blogs from Contentstack CMS with locale
+  const csBlogs = await getBlogs(locale);
   
   // Transform to Blog type
   const blogs: Blog[] = (csBlogs as ContentstackBlog[]).map(transformBlog);
 
   return (
     <Suspense fallback={<BlogsPageLoading />}>
-      <BlogsClient blogs={blogs} />
+      <BlogsClient blogs={blogs} currentLocale={locale} />
     </Suspense>
   );
 }
