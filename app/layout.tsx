@@ -33,7 +33,7 @@ export default async function RootLayout({
       {/* Setting the language attribute for the HTML document */}
       <body className="min-h-screen bg-gray-50">
         {/* Start Lytics Tracking Tag Version 3 */}
-        <Script
+        {/* <Script
           id="lytics-tracking"
           strategy="afterInteractive"
           dangerouslySetInnerHTML={{
@@ -47,7 +47,7 @@ export default async function RootLayout({
               jstag.pageView();
             `,
           }}
-        />
+        /> */}
         <SessionProvider>
           <Navigation navigationData={navigationData as ContentstackNavigation | null} />
           <main className="min-h-screen">
