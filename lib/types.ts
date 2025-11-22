@@ -372,3 +372,45 @@ export interface ContentstackBlog {
   $?: any;
   _metadata?: any;
 }
+
+// Notification types
+export interface Notification {
+  id: string;
+  userId: string;
+  userEmail: string;
+  type: 'application' | 'job_update' | 'system';
+  title: string;
+  message: string;
+  read: boolean;
+  metadata?: {
+    jobId?: string;
+    jobTitle?: string;
+    companyName?: string;
+    applicationId?: string;
+    [key: string]: any;
+  };
+  createdAt: string;
+  updatedAt: string;
+}
+
+// Contentstack Notification type (matches CMS schema)
+export interface ContentstackNotification {
+  uid: string;
+  user_id: string;
+  user_email: string;
+  type: 'application' | 'job_update' | 'system';
+  title: string;
+  message: string;
+  read: boolean;
+  metadata?: {
+    jobId?: string;
+    jobTitle?: string;
+    companyName?: string;
+    applicationId?: string;
+    [key: string]: any;
+  };
+  created_at?: string;
+  updated_at?: string;
+  $?: any;
+  _metadata?: any;
+}

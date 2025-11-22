@@ -116,6 +116,8 @@ export default function JobDetailClient({ job }: JobDetailClientProps) {
           availability: "",
           additionalInfo: ""
         });
+        // Trigger a custom event to refresh notifications
+        window.dispatchEvent(new CustomEvent('applicationSubmitted'));
       } else {
         alert(`❌ Failed to submit application: ${result.error}`);
       }

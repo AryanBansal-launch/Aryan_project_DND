@@ -14,3 +14,5 @@ CREATE INDEX IF NOT EXISTS idx_users_email ON users(email);
 -- Add comment to table
 COMMENT ON TABLE users IS 'Stores user authentication data for email/password login';
 
+-- Note: Notifications are now stored in Contentstack CMS, not in the database
+

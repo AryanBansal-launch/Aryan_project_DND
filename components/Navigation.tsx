@@ -22,6 +22,7 @@ import {
 } from "lucide-react";
 import { cn, getInitials } from "@/lib/utils";
 import { ContentstackNavigation } from "@/lib/types";
+import NotificationDropdown from "./NotificationDropdown";
 
 // Icon mapping for CMS icon names
 const iconMap: { [key: string]: any } = {
@@ -125,9 +126,7 @@ export default function Navigation({ navigationData }: NavigationProps) {
               <div className="w-8 h-8 bg-gray-200 rounded-full animate-pulse" />
             ) : session ? (
               <>
-                <button className="p-2 text-gray-600 hover:text-gray-900 hover:bg-gray-100 rounded-md">
-                  <Bell className="w-5 h-5" />
-                </button>
+                <NotificationDropdown />
                 
                 {/* User Menu */}
                 <div className="relative">
@@ -266,6 +265,9 @@ export default function Navigation({ navigationData }: NavigationProps) {
                       <span className="text-base font-medium text-gray-900">
                         {session.user?.name || "User"}
                       </span>
+                    </div>
+                    <div className="px-3">
+                      <NotificationDropdown />
                     </div>
                     <Link
                       href="/profile"
