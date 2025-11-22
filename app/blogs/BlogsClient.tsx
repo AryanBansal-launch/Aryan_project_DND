@@ -18,8 +18,6 @@ interface BlogsClientProps {
   blogs: Blog[];
 }
 
-const categories = ["Career Tips", "Industry News", "Technology", "Remote Work"];
-
 export default function BlogsClient({ blogs }: BlogsClientProps) {
   const [searchQuery, setSearchQuery] = useState("");
   const [selectedCategory, setSelectedCategory] = useState<string>("");

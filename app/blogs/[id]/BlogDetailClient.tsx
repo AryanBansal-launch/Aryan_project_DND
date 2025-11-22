@@ -15,7 +15,6 @@ import {
   Linkedin
 } from "lucide-react";
 import { Blog } from "@/lib/types";
-import { formatRelativeTime } from "@/lib/utils";
 
 interface BlogDetailClientProps {
   blog: Blog;
