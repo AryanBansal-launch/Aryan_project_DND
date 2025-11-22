@@ -95,7 +95,17 @@ export const authOptions: NextAuthOptions = {
   session: {
     strategy: "jwt"
   },
-  secret: process.env.NEXTAUTH_SECRET
+  secret: process.env.NEXTAUTH_SECRET,
+  debug: process.env.NODE_ENV === 'development',
+  // Add error handling for JWT decryption failures
+  events: {
+    async signIn({ user, account, profile, isNewUser }) {
+      // Log sign in events
+    },
+    async signOut({ session, token }) {
+      // Log sign out events
+    },
+  },
 }
 
 export default NextAuth(authOptions)

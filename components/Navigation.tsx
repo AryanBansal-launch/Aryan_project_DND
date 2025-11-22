@@ -17,7 +17,8 @@ import {
   UserPlus,
   FileText,
   LogOut,
-  Settings
+  Settings,
+  BookOpen
 } from "lucide-react";
 import { cn, getInitials } from "@/lib/utils";
 import { ContentstackNavigation } from "@/lib/types";
@@ -35,7 +36,8 @@ const iconMap: { [key: string]: any } = {
   LogIn,
   UserPlus,
   LogOut,
-  Settings
+  Settings,
+  BookOpen
 };
 
 interface NavigationProps {
@@ -55,14 +57,19 @@ export default function Navigation({ navigationData }: NavigationProps) {
     { label: "Home", link: "/", icon: "Search" },
     { label: "Jobs", link: "/jobs", icon: "Briefcase" },
     { label: "Companies", link: "/companies", icon: "Building2" },
+    { label: "Blogs", link: "/blogs", icon: "BookOpen" },
     { label: "Applications", link: "/applications", icon: "FileText", requireAuth: true },
     { label: "Profile", link: "/profile", icon: "User", requireAuth: true },
   ];
 
   // Filter nav items based on authentication
   const navItems = allNavItems.filter(item => {
-    // For items from CMS, check if link is /applications or /profile
-    const requiresAuth = item.link === '/applications' || item.link === '/profile';
+    // Blogs should always be visible
+    if (item.link === '/blogs') {
+      return true;
+    }
+    // For items from CMS, check if link is /applications or /profile, or if requireAuth is set
+    const requiresAuth = item.link === '/applications' || item.link === '/profile' || item.requireAuth === true;
     return !requiresAuth || session;
   });
 
@@ -90,7 +97,8 @@ export default function Navigation({ navigationData }: NavigationProps) {
             <div className="ml-10 flex items-baseline space-x-4">
               {navItems.map((item) => {
                 const Icon = iconMap[item.icon || 'Briefcase'] || Briefcase;
-                const isActive = pathname === item.link;
+                // Check if current path matches the link or starts with it (for nested routes like /blogs/[id])
+                const isActive = pathname === item.link || (item.link !== '/' && pathname.startsWith(item.link));
                 
                 return (
                   <Link
@@ -217,7 +225,8 @@ export default function Navigation({ navigationData }: NavigationProps) {
             <div className="px-2 pt-2 pb-3 space-y-1 sm:px-3 border-t">
               {navItems.map((item) => {
                 const Icon = iconMap[item.icon || 'Briefcase'] || Briefcase;
-                const isActive = pathname === item.link;
+                // Check if current path matches the link or starts with it (for nested routes like /blogs/[id])
+                const isActive = pathname === item.link || (item.link !== '/' && pathname.startsWith(item.link));
                 
                 return (
                   <Link

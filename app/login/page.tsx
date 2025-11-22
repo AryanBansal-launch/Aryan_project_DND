@@ -8,10 +8,13 @@ import {
   Lock
 } from "lucide-react";
 import Link from "next/link";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 
 export default function LoginPage() {
   const router = useRouter();
+  const searchParams = useSearchParams();
+  const callbackUrl = searchParams.get("callbackUrl") || "/";
+  
   const [isLoading, setIsLoading] = useState(false);
   const [isGoogleLoading, setIsGoogleLoading] = useState(false);
   const [error, setError] = useState("");
@@ -23,7 +26,7 @@ export default function LoginPage() {
   const handleGoogleSignIn = async () => {
     setIsGoogleLoading(true);
     try {
-      await signIn("google", { callbackUrl: "/" });
+      await signIn("google", { callbackUrl });
     } catch (error) {
       console.error("Sign in error:", error);
       setError("Failed to sign in with Google");
@@ -47,7 +50,7 @@ export default function LoginPage() {
       if (result?.error) {
         setError(result.error);
       } else if (result?.ok) {
-        router.push("/");
+        router.push(callbackUrl);
         router.refresh();
       }
     } catch (error) {

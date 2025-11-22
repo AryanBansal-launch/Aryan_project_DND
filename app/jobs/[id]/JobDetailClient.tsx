@@ -2,6 +2,7 @@
 
 import { useState, useRef, useEffect } from "react";
 import { useSession } from "next-auth/react";
+import { useRouter } from "next/navigation";
 import { 
   MapPin, 
   Clock, 
@@ -22,7 +23,8 @@ interface JobDetailClientProps {
 }
 
 export default function JobDetailClient({ job }: JobDetailClientProps) {
-  const { data: session } = useSession();
+  const { data: session, status } = useSession();
+  const router = useRouter();
   const [showApplicationForm, setShowApplicationForm] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [applicationData, setApplicationData] = useState({
@@ -45,6 +47,24 @@ export default function JobDetailClient({ job }: JobDetailClientProps) {
 
   const handleInputChange = (field: string, value: string | File | null) => {
     setApplicationData(prev => ({ ...prev, [field]: value }));
+  };
+
+  const handleApplyNow = () => {
+    // Check if user is authenticated
+    if (status === "loading") {
+      // Still loading, wait
+      return;
+    }
+    
+    if (!session?.user) {
+      // Redirect to login with callback URL to return to this job detail page
+      const currentUrl = window.location.pathname;
+      router.push(`/login?callbackUrl=${encodeURIComponent(currentUrl)}`);
+      return;
+    }
+    
+    // User is logged in, show application form
+    setShowApplicationForm(!showApplicationForm);
   };
 
   const handleSubmitApplication = async (e: React.FormEvent) => {
@@ -387,7 +407,7 @@ export default function JobDetailClient({ job }: JobDetailClientProps) {
             <div className="bg-white rounded-lg shadow-sm border p-6">
               <h2 className="text-lg font-semibold text-gray-900 mb-4">Quick Apply</h2>
               <button
-                onClick={() => setShowApplicationForm(!showApplicationForm)}
+                onClick={handleApplyNow}
                 className={`w-full px-4 py-3 rounded-md font-medium ${
                   showApplicationForm
                     ? "bg-gray-200 text-gray-700 hover:bg-gray-300"
