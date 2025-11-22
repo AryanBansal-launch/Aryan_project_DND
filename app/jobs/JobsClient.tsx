@@ -28,21 +28,29 @@ interface JobsClientProps {
 export default function JobsClient({ jobs }: JobsClientProps) {
   const searchParams = useSearchParams();
   const companyFromUrl = searchParams.get("company");
+  const queryFromUrl = searchParams.get("q");
+  const locationFromUrl = searchParams.get("location");
   
   const [filters, setFilters] = useState<JobSearchFilters>({});
   const [showFilters, setShowFilters] = useState(false);
-  const [searchQuery, setSearchQuery] = useState("");
-  const [searchLocation, setSearchLocation] = useState("");
+  const [searchQuery, setSearchQuery] = useState(queryFromUrl || "");
+  const [searchLocation, setSearchLocation] = useState(locationFromUrl || "");
   const [sortBy, setSortBy] = useState("relevance");
   const [companyFilter, setCompanyFilter] = useState(companyFromUrl || "");
 
-  // Update company filter when URL param changes
+  // Update filters when URL params change
   useEffect(() => {
     if (companyFromUrl) {
       setCompanyFilter(companyFromUrl);
       setShowFilters(true); // Show filters when coming from company page
     }
-  }, [companyFromUrl]);
+    if (queryFromUrl) {
+      setSearchQuery(queryFromUrl);
+    }
+    if (locationFromUrl) {
+      setSearchLocation(locationFromUrl);
+    }
+  }, [companyFromUrl, queryFromUrl, locationFromUrl]);
 
   const handleFilterChange = (key: keyof JobSearchFilters, value: any) => {
     setFilters(prev => ({ ...prev, [key]: value }));

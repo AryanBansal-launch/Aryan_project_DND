@@ -197,6 +197,7 @@ export interface ContentstackNavigation {
     label: string;
     link: string;
     icon?: string;
+    requireAuth?: boolean;
   }>;
 }
 
@@ -336,4 +337,38 @@ export interface JobSearchResult {
   page: number;
   limit: number;
   hasMore: boolean;
+}
+
+// Blog Types
+export interface Blog {
+  id: string;
+  title: string;
+  slug: string;
+  excerpt: string;
+  content: string;
+  featuredImage?: File | null;
+  author: string;
+  category: string;
+  publishedDate: string;
+  readingTime: number;
+  createdAt?: string;
+  updatedAt?: string;
+}
+
+// Contentstack Blog type (matches CMS schema)
+export interface ContentstackBlog {
+  uid: string;
+  title: string;
+  slug: string;
+  excerpt: string;
+  content: string;
+  featured_image?: File | null;
+  author: string;
+  category: string;
+  published_date: string;
+  reading_time: number;
+  created_at?: string;
+  updated_at?: string;
+  $?: any;
+  _metadata?: any;
 }

@@ -1,7 +1,8 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect, useRef } from "react";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { 
   Search, 
   MapPin, 
@@ -15,6 +16,86 @@ import {
 } from "lucide-react";
 import { ContentstackHomepage } from "@/lib/types";
 import { formatSalary, formatRelativeTime } from "@/lib/utils";
+
+// Animated Counter Component
+function AnimatedCounter({ value, duration = 2000 }: { value: string; duration?: number }) {
+  const [count, setCount] = useState(0);
+  const [hasAnimated, setHasAnimated] = useState(false);
+  const elementRef = useRef<HTMLDivElement>(null);
+
+  // Extract numeric value and suffix (e.g., "12,345" -> 12345, "89%" -> 89 and "%")
+  const parseValue = (val: string) => {
+    // Remove commas and extract number
+    const numericPart = val.replace(/,/g, '').replace(/%/g, '');
+    const number = parseFloat(numericPart);
+    const suffix = val.includes('%') ? '%' : '';
+    const hasCommas = val.includes(',');
+    return { number, suffix, hasCommas };
+  };
+
+  useEffect(() => {
+    const { number, suffix, hasCommas } = parseValue(value);
+    
+    if (isNaN(number)) {
+      // If not a number, just display the value as-is
+      setCount(number);
+      return;
+    }
+
+    const observer = new IntersectionObserver(
+      (entries) => {
+        entries.forEach((entry) => {
+          if (entry.isIntersecting && !hasAnimated) {
+            setHasAnimated(true);
+            
+            // Animate from 0 to target number
+            const startTime = Date.now();
+            const startValue = 0;
+            const endValue = number;
+            
+            const animate = () => {
+              const now = Date.now();
+              const elapsed = now - startTime;
+              const progress = Math.min(elapsed / duration, 1);
+              
+              // Easing function for smooth animation
+              const easeOutQuart = 1 - Math.pow(1 - progress, 4);
+              const currentValue = Math.floor(startValue + (endValue - startValue) * easeOutQuart);
+              
+              setCount(currentValue);
+              
+              if (progress < 1) {
+                requestAnimationFrame(animate);
+              } else {
+                setCount(endValue);
+              }
+            };
+            
+            requestAnimationFrame(animate);
+          }
+        });
+      },
+      { threshold: 0.5 }
+    );
+
+    if (elementRef.current) {
+      observer.observe(elementRef.current);
+    }
+
+    return () => {
+      if (elementRef.current) {
+        observer.unobserve(elementRef.current);
+      }
+    };
+  }, [value, duration, hasAnimated]);
+
+  const { suffix, hasCommas } = parseValue(value);
+  const displayValue = hasCommas 
+    ? count.toLocaleString() + suffix
+    : count.toString() + suffix;
+
+  return <div ref={elementRef}>{displayValue}</div>;
+}
 
 // Icon mapping
 const iconMap: { [key: string]: any } = {
@@ -36,15 +117,18 @@ interface HomeClientProps {
 }
 
 export default function HomeClient({ homepage, featuredJobs, topCompanies }: HomeClientProps) {
+  const router = useRouter();
   const [searchQuery, setSearchQuery] = useState("");
   const [searchLocation, setSearchLocation] = useState("");
 
   const handleSearch = () => {
     // Redirect to jobs page with search params
     const params = new URLSearchParams();
-    if (searchQuery) params.set('q', searchQuery);
-    if (searchLocation) params.set('location', searchLocation);
-    window.location.href = `/jobs?${params.toString()}`;
+    if (searchQuery.trim()) params.set('q', searchQuery.trim());
+    if (searchLocation.trim()) params.set('location', searchLocation.trim());
+    
+    const queryString = params.toString();
+    router.push(`/jobs${queryString ? `?${queryString}` : ''}`);
   };
 
   return (
@@ -111,7 +195,9 @@ export default function HomeClient({ homepage, featuredJobs, topCompanies }: Hom
                   <div className="inline-flex items-center justify-center w-12 h-12 bg-blue-100 rounded-lg mb-4">
                     <Icon className="w-6 h-6 text-blue-600" />
                   </div>
-                  <div className="text-3xl font-bold text-gray-900 mb-2">{stat.value}</div>
+                  <div className="text-3xl font-bold text-gray-900 mb-2">
+                    <AnimatedCounter value={stat.value} duration={2000} />
+                  </div>
                   <div className="text-gray-600">{stat.label}</div>
                 </div>
               );
@@ -234,11 +320,6 @@ export default function HomeClient({ homepage, featuredJobs, topCompanies }: Hom
             <Link href={homepage.cta_section.primary_button_link}>
               <button className="bg-white text-blue-600 hover:bg-gray-100 px-8 py-3 rounded-md font-medium transition-colors">
                 {homepage.cta_section.primary_button_text}
-              </button>
-            </Link>
-            <Link href={homepage.cta_section.secondary_button_link}>
-              <button className="border-2 border-white text-white hover:bg-white hover:text-blue-600 px-8 py-3 rounded-md font-medium transition-colors">
-                {homepage.cta_section.secondary_button_text}
               </button>
             </Link>
           </div>

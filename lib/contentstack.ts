@@ -128,6 +128,20 @@ export async function getCompanyByUid(uid: string) {
   return null;
 }
 
+// Helper function to create placeholder company data
+function createPlaceholderCompany(job: any, companyUid: string | null) {
+  return {
+    uid: companyUid || 'placeholder',
+    title: 'Company (Not Available)',
+    description: 'Company information is currently unavailable',
+    location: job.location || 'Location not specified',
+    industry: 'Various',
+    size: 'Not specified',
+    created_at: job.created_at,
+    updated_at: job.updated_at,
+  };
+}
+
 // Function to fetch all jobs
 export async function getJobs() {
   const result = await stack
@@ -144,7 +158,8 @@ export async function getJobs() {
     }
 
     // Fetch company details for each job
-    const jobsWithCompany = await Promise.all(
+    // Use Promise.allSettled to handle failures gracefully
+    const jobsWithCompanyResults = await Promise.allSettled(
       result.entries.map(async (job: any) => {
         let companyUid: string | null = null;
         
@@ -169,30 +184,53 @@ export async function getJobs() {
         // Fetch the full company data if we have a UID
         if (companyUid) {
           try {
-            const company = await getCompanyByUid(companyUid);
+            // Add timeout wrapper to prevent hanging requests
+            const timeoutPromise = new Promise((_, reject) => 
+              setTimeout(() => reject(new Error('Request timeout')), 10000) // 10 second timeout
+            );
+            
+            const company = await Promise.race([
+              getCompanyByUid(companyUid),
+              timeoutPromise
+            ]) as any;
+            
             if (company) {
               job.company = [company]; // Store as array for consistency
+            } else {
+              // Create placeholder if company fetch returns null
+              job.company = [createPlaceholderCompany(job, companyUid)];
             }
-          } catch (error) {
-            console.error(`Failed to fetch company ${companyUid}:`, error);
+          } catch (error: any) {
+            // Log error but don't fail the entire job
+            if (error.message !== 'Request timeout') {
+              console.error(`Failed to fetch company ${companyUid}:`, error.message || error);
+            } else {
+              console.error(`Timeout fetching company ${companyUid}`);
+            }
+            // Create placeholder company on error
+            job.company = [createPlaceholderCompany(job, companyUid)];
           }
         } else {
           // Create a placeholder company for jobs without company data
-          job.company = [{
-            uid: 'placeholder',
-            title: 'Company (Not Specified)',
-            description: 'Company information not available',
-            location: job.location || 'Location not specified',
-            industry: 'Various',
-            size: 'Not specified',
-            created_at: job.created_at,
-            updated_at: job.updated_at,
-          }];
+          job.company = [createPlaceholderCompany(job, null)];
         }
         
         return job;
       })
     );
+
+    // Extract successful results and handle failures
+    const jobsWithCompany = jobsWithCompanyResults.map((promiseResult, index) => {
+      if (promiseResult.status === 'fulfilled') {
+        return promiseResult.value;
+      } else {
+        // If job processing failed completely, return the original job with placeholder company
+        const originalJob = result.entries[index];
+        originalJob.company = [createPlaceholderCompany(originalJob, null)];
+        console.error(`Failed to process job ${originalJob.uid}:`, promiseResult.reason);
+        return originalJob;
+      }
+    });
 
     return jobsWithCompany; // Returning all job entries with company data
   }
@@ -237,25 +275,35 @@ export async function getJobByUid(uid: string) {
     // Fetch the full company data if we have a UID
     if (companyUid) {
       try {
-        const company = await getCompanyByUid(companyUid);
+        // Add timeout wrapper to prevent hanging requests
+        const timeoutPromise = new Promise((_, reject) => 
+          setTimeout(() => reject(new Error('Request timeout')), 10000) // 10 second timeout
+        );
+        
+        const company = await Promise.race([
+          getCompanyByUid(companyUid),
+          timeoutPromise
+        ]) as any;
+        
         if (company) {
           job.company = [company]; // Store as array for consistency
+        } else {
+          // Create placeholder if company fetch returns null
+          job.company = [createPlaceholderCompany(job, companyUid)];
         }
-      } catch (error) {
-        console.error(`Failed to fetch company ${companyUid}:`, error);
+      } catch (error: any) {
+        // Log error but don't fail the entire job
+        if (error.message !== 'Request timeout') {
+          console.error(`Failed to fetch company ${companyUid}:`, error.message || error);
+        } else {
+          console.error(`Timeout fetching company ${companyUid}`);
+        }
+        // Create placeholder company on error
+        job.company = [createPlaceholderCompany(job, companyUid)];
       }
     } else {
       // Create a placeholder company for jobs without company data
-      job.company = [{
-        uid: 'placeholder',
-        title: 'Company (Not Specified)',
-        description: 'Company information not available',
-        location: job.location || 'Location not specified',
-        industry: 'Various',
-        size: 'Not specified',
-        created_at: job.created_at,
-        updated_at: job.updated_at,
-      }];
+      job.company = [createPlaceholderCompany(job, null)];
     }
 
     return result; // Returning the fetched job
@@ -298,6 +346,67 @@ export async function getNavigation() {
     
     if (process.env.NEXT_PUBLIC_CONTENTSTACK_PREVIEW === 'true') {
       contentstack.Utils.addEditableTags(entry as any, 'navigation', true);
+    }
+
+    return entry;
+  }
+
+  return null;
+}
+
+// Function to fetch all blog posts
+export async function getBlogs() {
+  const result = await stack
+    .contentType("blog_post")
+    .entry()
+    .query()
+    .find();
+
+  if (result.entries) {
+    if (process.env.NEXT_PUBLIC_CONTENTSTACK_PREVIEW === 'true') {
+      result.entries.forEach((entry: any) => {
+        contentstack.Utils.addEditableTags(entry as any, 'blog_post', true);
+      });
+    }
+
+    return result.entries;
+  }
+
+  return [];
+}
+
+// Function to fetch a single blog post by UID
+export async function getBlogByUid(uid: string) {
+  const result = await stack
+    .contentType("blog_post")
+    .entry(uid)
+    .fetch();
+
+  if (result) {
+    if (process.env.NEXT_PUBLIC_CONTENTSTACK_PREVIEW === 'true') {
+      contentstack.Utils.addEditableTags(result as any, 'blog_post', true);
+    }
+
+    return result;
+  }
+
+  return null;
+}
+
+// Function to fetch a blog post by slug
+export async function getBlogBySlug(slug: string) {
+  const result = await stack
+    .contentType("blog_post")
+    .entry()
+    .query()
+    .where("slug", QueryOperation.EQUALS, slug)
+    .find();
+
+  if (result.entries && result.entries.length > 0) {
+    const entry = result.entries[0];
+    
+    if (process.env.NEXT_PUBLIC_CONTENTSTACK_PREVIEW === 'true') {
+      contentstack.Utils.addEditableTags(entry as any, 'blog_post', true);
     }
 
     return entry;
