@@ -47,17 +47,40 @@ export const authOptions: NextAuthOptions = {
     signIn: "/login",
   },
   callbacks: {
-    async jwt({ token, account }) {
-      if (account) {
-        token.accessToken = account.access_token
+    async signIn({ user, account, profile }) {
+      // Allow Google OAuth sign in
+      if (account?.provider === "google") {
+        return true;
       }
-      return token
+      // Allow credentials sign in
+      return true;
+    },
+    async redirect({ url, baseUrl }) {
+      // Allows relative callback URLs
+      if (url.startsWith("/")) return `${baseUrl}${url}`;
+      // Allows callback URLs on the same origin
+      if (new URL(url).origin === baseUrl) return url;
+      return baseUrl;
+    },
+    async jwt({ token, account, user }) {
+      if (account) {
+        token.accessToken = account.access_token;
+        if (user) {
+          token.id = user.id;
+          token.email = user.email || undefined;
+          token.name = user.name || undefined;
+        }
+      }
+      return token;
     },
     async session({ session, token }) {
       if (token.accessToken) {
-        session.accessToken = token.accessToken as string
+        session.accessToken = token.accessToken as string;
       }
-      return session
+      if (token.id) {
+        session.user.id = token.id as string;
+      }
+      return session;
     },
   },
   session: {
