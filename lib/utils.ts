@@ -90,3 +90,56 @@ export function capitalizeWords(str: string): string {
     txt.charAt(0).toUpperCase() + txt.substr(1).toLowerCase()
   )
 }
+/**
+ * Detects user locale based on cookie preference, Accept-Language header, and supported locales
+ * Falls back to 'en-us' if no match is found
+ * Priority: 1. Cookie preference, 2. Accept-Language header, 3. Default
+ * @param cookieLocale - Locale from cookie (optional, highest priority)
+ * @param acceptLanguage - Accept-Language header value (optional)
+ * @returns Locale code (e.g., 'en-us', 'hi-in')
+ */
+export function detectLocale(cookieLocale?: string | null, acceptLanguage?: string | null): string {
+  // Supported locales in the application
+  const supportedLocales = ['en-us', 'hi-in'];
+  const defaultLocale = 'en-us';
+
+  // Check cookie preference first (user's manual selection)
+  if (cookieLocale && supportedLocales.includes(cookieLocale)) {
+    return cookieLocale;
+  }
+
+  if (!acceptLanguage) {
+    return defaultLocale;
+  }
+
+  // Parse Accept-Language header (e.g., "en-US,en;q=0.9,hi;q=0.8")
+  const languages = acceptLanguage
+    .split(',')
+    .map(lang => {
+      const [locale, q = 'q=1'] = lang.trim().split(';');
+      const quality = parseFloat(q.replace('q=', '')) || 1;
+      return { locale: locale.toLowerCase(), quality };
+    })
+    .sort((a, b) => b.quality - a.quality);
+
+  // Try to match with supported locales
+  for (const { locale } of languages) {
+    // Exact match (e.g., "en-us")
+    if (supportedLocales.includes(locale)) {
+      return locale;
+    }
+    
+    // Match language code (e.g., "hi" matches "hi-in")
+    const languageCode = locale.split('-')[0];
+    const matchedLocale = supportedLocales.find(supported => 
+      supported.startsWith(languageCode)
+    );
+    if (matchedLocale) {
+      return matchedLocale;
+    }
+  }
+
+  // Default fallback
+  return defaultLocale;
+}
+
