@@ -56,11 +56,20 @@ export const authOptions: NextAuthOptions = {
       return true;
     },
     async redirect({ url, baseUrl }) {
+      // If redirecting from OAuth callback, go to home
+      if (url.includes("/api/auth/callback") || url === baseUrl || url === `${baseUrl}/`) {
+        return `${baseUrl}/`;
+      }
       // Allows relative callback URLs
       if (url.startsWith("/")) return `${baseUrl}${url}`;
       // Allows callback URLs on the same origin
-      if (new URL(url).origin === baseUrl) return url;
-      return baseUrl;
+      try {
+        if (new URL(url).origin === baseUrl) return url;
+      } catch {
+        // Invalid URL, default to home
+        return `${baseUrl}/`;
+      }
+      return `${baseUrl}/`;
     },
     async jwt({ token, account, user }) {
       if (account) {
