@@ -1,4 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
+import { getServerSession } from "next-auth/next";
+import { authOptions } from "@/lib/auth";
+import { createNotificationInContentstack } from "@/lib/contentstack-notifications";
 
 export async function POST(request: NextRequest) {
   try {
@@ -14,7 +17,8 @@ export async function POST(request: NextRequest) {
       expectedSalary,
       availability,
       additionalInfo,
-      resumeFileName
+      resumeFileName,
+      jobId
     } = body;
 
     // Validate required fields
@@ -74,15 +78,39 @@ export async function POST(request: NextRequest) {
       // Still return success to user
     }
 
+    // Create notification for the user in Contentstack
+    try {
+      const session = await getServerSession(authOptions);
+      if (session?.user?.email) {
+        const applicationId = `APP-${Date.now()}`;
+        await createNotificationInContentstack(
+          session.user.email,
+          'application',
+          'Application Submitted Successfully',
+          `Your application for ${jobTitle} at ${companyName} has been submitted. A confirmation email has been sent to your inbox.`,
+          {
+            jobId: jobId || '',
+            jobTitle,
+            companyName,
+            applicationId
+          }
+        );
+      }
+    } catch (notificationError) {
+      // Log error but don't fail the application submission
+      console.error("Error creating notification:", notificationError);
+    }
+
     // In a real application, you would also:
     // 1. Save the application to a database
     // 2. Upload the resume file to storage
     // 3. Create an Application entry in Contentstack
 
+    const applicationId = `APP-${Date.now()}`;
     return NextResponse.json({
       success: true,
       message: "Application submitted successfully. You will receive a confirmation email shortly.",
-      applicationId: `APP-${Date.now()}` // Generate a proper ID in production
+      applicationId
     });
 
   } catch (error) {
