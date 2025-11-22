@@ -8,6 +8,14 @@ import { ContentstackNavigation } from "@/lib/types"; // Import type
 export const metadata: Metadata = {
   title: "JobPortal - Find Your Dream Job",
   description: "Discover thousands of job opportunities from top companies. Search, apply, and advance your career with our comprehensive job portal.",
+  icons: {
+    icon: [
+      { url: "/icon.png", type: "image/png" },
+    ],
+    apple: [
+      { url: "/icon.png", type: "image/png" },
+    ],
+  },
 };
 
 // RootLayout component that wraps the entire application
