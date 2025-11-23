@@ -410,6 +410,7 @@ export default function JobDetailClient({ job }: JobDetailClientProps) {
               <h2 className="text-lg font-semibold text-gray-900 mb-4">Quick Apply</h2>
               <button
                 onClick={handleApplyNow}
+                data-apply-now="true"
                 className={`w-full px-4 py-3 rounded-md font-medium ${
                   showApplicationForm
                     ? "bg-gray-200 text-gray-700 hover:bg-gray-300"
@@ -423,6 +424,7 @@ export default function JobDetailClient({ job }: JobDetailClientProps) {
                   href={job.applicationUrl}
                   target="_blank"
                   rel="noopener noreferrer"
+                  data-apply-now="true"
                   className="block w-full text-center border border-blue-600 text-blue-600 hover:bg-blue-50 px-4 py-3 rounded-md font-medium mt-3"
                 >
                   Apply on Company Site

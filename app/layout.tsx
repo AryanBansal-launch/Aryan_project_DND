@@ -3,7 +3,8 @@ import Script from "next/script"; // Importing Next.js Script component
 import "./globals.css"; // Importing global CSS styles
 import Navigation from "@/components/Navigation"; // Importing the Navigation component
 import { SessionProvider } from "@/components/SessionProvider"; // Importing the SessionProvider component
-import { getNavigation } from "@/lib/contentstack"; // Import CMS function
+import PersonalizedBanner from "@/components/PersonalizedBanner"; // Importing the PersonalizedBanner component
+import { getNavigation, getPersonalizedBanner } from "@/lib/contentstack"; // Import CMS functions
 import { ContentstackNavigation } from "@/lib/types"; // Import type
 
 export const metadata: Metadata = {
@@ -27,6 +28,12 @@ export default async function RootLayout({
 }>) {
   // Fetch navigation content from CMS
   const navigationData = await getNavigation();
+  
+  // Fetch personalized banner content from Contentstack
+  // Note: For advanced personalization with user context (time on site, behavior),
+  // you may want to fetch this client-side via an API route that includes user context
+  // For now, we fetch the default banner which can be personalized via Contentstack segments
+  const bannerData = await getPersonalizedBanner();
 
   return (
     <html lang="en">
@@ -54,6 +61,7 @@ export default async function RootLayout({
             {children}
             <script src="https://chatbot-marketplace-try.contentstackapps.com/chatbot-widget.js?site_key=site-1763408244725-z9kudn" async></script>
           </main>
+          <PersonalizedBanner contentstackData={bannerData as any} />
         </SessionProvider>
       </body>
       {/* Rendering the children components inside the body */}
