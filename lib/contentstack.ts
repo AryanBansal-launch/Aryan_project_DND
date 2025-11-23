@@ -448,3 +448,108 @@ export async function getBlogBySlug(slug: string) {
 
   return null;
 }
+
+// Interface for user context used in personalization
+export interface PersonalizationContext {
+  // User behavior attributes
+  timeOnSite?: number; // Time in seconds user has been on site
+  hasClickedApplyNow?: boolean; // Whether user has clicked Apply Now
+  pageViews?: number; // Number of pages viewed
+  // User attributes for segmentation
+  userId?: string; // Optional user ID
+  userEmail?: string; // Optional user email
+  userSegment?: string; // Pre-determined user segment (e.g., "users_not_applied_30s")
+  // Additional custom attributes
+  [key: string]: any;
+}
+
+// Function to fetch personalized banner content using Contentstack Personalization
+// This delivers different banner content based on user segments and behavior
+// 
+// IMPORTANT: To use Contentstack Personalization, you need to:
+// 1. Set up experiences and audiences in Contentstack Personalize dashboard
+// 2. Pass user attributes/context so Contentstack can match users to audiences
+// 3. Contentstack will automatically return the appropriate variant based on experiences
+export async function getPersonalizedBanner(
+  userContext?: PersonalizationContext,
+  locale?: string
+) {
+  // Create a stack instance with locale if provided
+  const stackInstance = locale 
+    ? contentstack.stack({
+        apiKey: process.env.NEXT_PUBLIC_CONTENTSTACK_API_KEY as string,
+        deliveryToken: process.env.NEXT_PUBLIC_CONTENTSTACK_DELIVERY_TOKEN as string,
+        environment: process.env.NEXT_PUBLIC_CONTENTSTACK_ENVIRONMENT as string,
+        region: region ? region : process.env.NEXT_PUBLIC_CONTENTSTACK_REGION as any,
+        host: process.env.NEXT_PUBLIC_CONTENTSTACK_CONTENT_DELIVERY || endpoints && endpoints.contentDelivery,
+        locale: locale,
+      })
+    : stack;
+
+  // Build query with personalization
+  let query = stackInstance
+    .contentType("personalized_banner")
+    .entry()
+    .query();
+
+  // Add personalization context if provided
+  // Contentstack Personalization works by:
+  // 1. Passing user attributes/context (time on site, behavior, etc.)
+  // 2. Contentstack matches user to audiences based on experience rules
+  // 3. Returns the appropriate variant/content for that audience
+  
+  if (userContext) {
+    // Filter by enabled banners only
+    query = query.where("enabled", QueryOperation.EQUALS, true);
+    
+    // Manual filtering by user_segment (fallback method)
+    // This is a workaround - true personalization would use Contentstack's Personalization API
+    if (userContext.userSegment) {
+      query = query.where("user_segment", QueryOperation.EQUALS, userContext.userSegment);
+    }
+    
+    // TODO: Integrate with Contentstack Personalization API
+    // To use true personalization, you would need to:
+    // 1. Use Contentstack Personalization API endpoint (if available)
+    // 2. Pass user attributes in headers: X-User-Attributes or similar
+    // 3. Let Contentstack's engine match user to experiences/audiences
+    // 4. Return the personalized variant automatically
+    
+    // Example of how it might work (if API supports it):
+    // const personalizeHeaders = {
+    //   'X-User-Attributes': JSON.stringify({
+    //     time_on_site: userContext.timeOnSite,
+    //     has_clicked_apply_now: userContext.hasClickedApplyNow,
+    //     user_segment: userContext.userSegment
+    //   })
+    // };
+  } else {
+    // Default: get enabled banners
+    query = query.where("enabled", QueryOperation.EQUALS, true);
+  }
+
+  const result = await query.find();
+
+  if (result.entries && result.entries.length > 0) {
+    // If multiple entries, prioritize by priority field or return first
+    let entry = result.entries[0];
+    
+    // If there are multiple entries, sort by priority (lower number = higher priority)
+    if (result.entries.length > 1) {
+      const sortedEntries = result.entries.sort((a: any, b: any) => {
+        const priorityA = a.priority || 999;
+        const priorityB = b.priority || 999;
+        return priorityA - priorityB;
+      });
+      entry = sortedEntries[0];
+    }
+    
+    if (process.env.NEXT_PUBLIC_CONTENTSTACK_PREVIEW === 'true') {
+      contentstack.Utils.addEditableTags(entry as any, 'personalized_banner', true);
+    }
+
+    return entry;
+  }
+
+  return null;
+}
