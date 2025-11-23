@@ -1,5 +1,4 @@
 import type { Metadata } from "next"; // Importing the Metadata type from Next.js
-import Script from "next/script"; // Importing Next.js Script component
 import "./globals.css"; // Importing global CSS styles
 import Navigation from "@/components/Navigation"; // Importing the Navigation component
 import { SessionProvider } from "@/components/SessionProvider"; // Importing the SessionProvider component

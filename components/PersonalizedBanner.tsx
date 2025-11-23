@@ -18,7 +18,6 @@ export interface ContentstackBannerData {
   cta_link?: string | { title?: string; href: string }; // Link can be string or object
   delay_seconds?: number;
   enabled?: boolean;
-  user_segment?: string;
   priority?: number;
   [key: string]: any; // Allow additional fields from Contentstack
 }
@@ -87,13 +86,12 @@ export default function PersonalizedBanner({
     : delay || 30000;
   const finalIsEnabled = finalBannerData?.enabled !== false;
 
-  // Don't show banner if disabled in Contentstack
-  if (!finalIsEnabled) {
-    return null;
-  }
-
   // Initialize Contentstack Personalize SDK (client-side only)
   useEffect(() => {
+    // Don't initialize if banner is disabled
+    if (!finalIsEnabled) {
+      return;
+    }
     const projectUid = process.env.NEXT_PUBLIC_CONTENTSTACK_PERSONALIZE_PROJECT_UID;
     
     if (projectUid) {
@@ -103,14 +101,333 @@ export default function PersonalizedBanner({
           console.log('✅ PersonalizedBanner: Contentstack Personalize SDK is active!');
           personalizeSDKReadyRef.current = true; // Mark SDK as ready
           
-          // Set user attributes for personalization
+          // Set user attributes for personalization - matching your Contentstack Personalize setup
+          // Attributes: time_on_site, has_clicked_apply_now, first_time_user
+          const isFirstTimeUser = !localStorage.getItem("session_start_time") || 
+                                  localStorage.getItem("first_visit") === null;
+          
           const userAttributes: PersonalizeUserAttributes = {
             time_on_site: timeOnSiteRef.current,
             has_clicked_apply_now: hasClickedApplyNow,
-            user_segment: hasClickedApplyNow ? undefined : "users_not_applied_30s",
+            first_time_user: isFirstTimeUser,
           };
           
           setPersonalizeAttributes(userAttributes);
+          
+          // Immediately fetch and log full summary for verification (test fetch)
+          setTimeout(async () => {
+            try {
+              const timeOnSite = Math.floor((Date.now() - (startTimeRef.current || Date.now())) / 1000);
+              const applyNowClicked = localStorage.getItem("apply_now_clicked") === "true";
+              const isFirstTimeUserCheck = !localStorage.getItem("session_start_time") || 
+                                          localStorage.getItem("first_visit") === null;
+              
+              const testAttributes = {
+                time_on_site: timeOnSite,
+                has_clicked_apply_now: applyNowClicked,
+                first_time_user: isFirstTimeUserCheck,
+              };
+              
+              await setPersonalizeAttributes(testAttributes);
+              
+              // Verify attributes were set correctly
+              const { getCurrentAttributes } = await import('@/lib/contentstack-personalize');
+              await new Promise(resolve => setTimeout(resolve, 200));
+              await getCurrentAttributes();
+              
+              // CRITICAL: Wait longer for SDK to process attributes and evaluate audience rules
+              console.log('⏳ Waiting for SDK to process attributes and evaluate audience rules...');
+              await new Promise(resolve => setTimeout(resolve, 1000)); // Increased to 1 second
+              
+              // Try getting experiences multiple times to see if they activate
+              let experiences = await getPersonalizeExperiences();
+              let retryCount = 0;
+              const maxRetries = 3;
+              
+              // Retry if no active variants (SDK might need more time)
+              while (retryCount < maxRetries && experiences.every((exp: any) => exp.activeVariantShortUid === null)) {
+                retryCount++;
+                console.log(`🔄 Retry ${retryCount}/${maxRetries}: Waiting for variant activation...`);
+                await new Promise(resolve => setTimeout(resolve, 500));
+                experiences = await getPersonalizeExperiences();
+              }
+              
+              if (retryCount > 0) {
+                console.log(`ℹ️ Checked ${retryCount + 1} time(s) for active variants`);
+              }
+              
+              // Final diagnostic: Check if SDK has the attributes
+              console.group('🔬 Final Diagnostic Check');
+              const finalAttrs = await getCurrentAttributes();
+              if (finalAttrs) {
+                console.log('✅ SDK has attributes stored');
+                console.log('Expected: first_time_user = true (for First_time_users audience)');
+                console.log('Actual:', finalAttrs);
+                const firstTimeMatch = finalAttrs.first_time_user === true;
+                console.log('first_time_user match:', firstTimeMatch ? '✅ TRUE' : `❌ ${finalAttrs.first_time_user}`);
+              } else {
+                console.log('❌ SDK does not have attributes stored!');
+                console.log('This might be why variants are not activating.');
+              }
+              
+              // Check experience details for common issues
+              console.log('\n🔍 Common Issues Checklist:');
+              experiences.forEach((exp: any, idx: number) => {
+                console.log(`\nExperience ${idx + 1} (${exp.shortUid}):`);
+                console.log('  ✅ Experience exists:', !!exp);
+                console.log('  ❌ Active variant:', exp.activeVariantShortUid || 'NONE');
+                console.log('  Experience name:', exp.name || exp.title || 'N/A');
+                console.log('  Experience status:', exp.status || exp.state || 'N/A');
+                
+                if (exp.variants && exp.variants.length > 0) {
+                  exp.variants.forEach((variant: any, vIdx: number) => {
+                    const audiences = variant.audiences || variant.audienceIds || variant.audience || [];
+                    const audienceArray = Array.isArray(audiences) ? audiences : (audiences ? [audiences] : []);
+                    const audienceNames = audienceArray.map((a: any) => {
+                      if (typeof a === 'string') return a;
+                      if (a && typeof a === 'object') return a.name || a.id || a.uid || JSON.stringify(a);
+                      return String(a);
+                    });
+                    
+                    console.log(`  Variant ${vIdx + 1} (${variant.name || variant.uid}):`);
+                    console.log('    - Audiences:', audienceNames.length > 0 ? audienceNames.join(', ') : 'NONE');
+                    console.log('    - Has content entry:', !!(variant.entryUid || variant.entry || variant.content));
+                    console.log('    - Content entry UID:', variant.entryUid || variant.entry || variant.content || 'NONE');
+                    console.log('    - Is active:', variant.uid === exp.activeVariantShortUid || variant.shortUid === exp.activeVariantShortUid);
+                    
+                    // Check if audience name matches
+                    if (matchesFirstTime && audienceNames.length > 0) {
+                      const hasFirstTimeAudience = audienceNames.some((name: string) => 
+                        name.toLowerCase().includes('first') || 
+                        name.toLowerCase().includes('first_time') ||
+                        name === 'First_time_users'
+                      );
+                      console.log('    - Matches "First_time_users"?', hasFirstTimeAudience ? '✅ YES' : `❌ NO (has: ${audienceNames.join(', ')})`);
+                      if (!hasFirstTimeAudience) {
+                        console.log('      ⚠️ Audience name mismatch! Expected "First_time_users" but variant has:', audienceNames);
+                      }
+                    }
+                  });
+                } else {
+                  console.log('  ⚠️ No variants found in experience!');
+                  console.log('  Full experience data:', JSON.stringify(exp, null, 2));
+                }
+              });
+              
+              console.log('\n💡 If everything is linked but still inactive, check:');
+              console.log('  1. DAL Connection: Go to Administration > Data Activation Layer');
+              console.log('     → Ensure Personalize project is connected to active DAL');
+              console.log('     → Test the connection');
+              console.log('  2. Audience Sync: Audiences must be synced from Lytics/Data source');
+              console.log('     → Check if "First_time_users" audience exists and is active');
+              console.log('     → Check if "users_not_applied_30s" audience exists and is active');
+              console.log('  3. Content Entry Linking: Not just content type, but specific entry');
+              console.log('     → In Experience config, ensure entry is selected for variant');
+              console.log('  4. Experience Publishing: Experience must be published, not just saved');
+              console.log('  5. Attribute Format: Ensure attributes match exactly (case-sensitive)');
+              console.log('     → first_time_user (not firstTimeUser or First_Time_User)');
+              console.log('     → has_clicked_apply_now (not hasClickedApplyNow)');
+              console.log('     → time_on_site (not timeOnSite)');
+              
+              console.groupEnd();
+              
+              // Comprehensive summary log for all 5 items
+              console.group('📋 PersonalizedBanner: Complete Personalization Summary (Initial Check)');
+              
+              // 1. Attributes
+              console.group('1️⃣ Attributes (Sent to SDK)');
+              console.table(testAttributes);
+              Object.entries(testAttributes).forEach(([key, value]) => {
+                if (value !== undefined) {
+                  console.log(`  ${key}:`, value, `(${typeof value})`);
+                }
+              });
+              console.groupEnd();
+              
+              // 2. Experiences - WITH CRITICAL VARIANT AUDIENCE CHECK
+              console.group('2️⃣ Experiences');
+              console.log('Total:', experiences.length);
+              experiences.forEach((exp: any, index: number) => {
+                console.log(`  Experience ${index + 1}:`, {
+                  shortUid: exp.shortUid,
+                  hasActiveVariant: exp.activeVariantShortUid !== null,
+                  activeVariantUid: exp.activeVariantShortUid
+                });
+                
+                // CRITICAL: Show variant audiences immediately
+                if (exp.variants && Array.isArray(exp.variants) && exp.variants.length > 0) {
+                  console.log(`  🔍 Experience ${index + 1} Variant Details:`);
+                  exp.variants.forEach((variant: any, vIdx: number) => {
+                    const audiences = variant.audiences || variant.audienceIds || variant.audience || [];
+                    const audienceArray = Array.isArray(audiences) ? audiences : (audiences ? [audiences] : []);
+                    const audienceNames = audienceArray.map((a: any) => {
+                      if (typeof a === 'string') return a;
+                      if (a && typeof a === 'object') return a.name || a.id || a.uid || JSON.stringify(a);
+                      return String(a);
+                    });
+                    
+                    const isActive = variant.uid === exp.activeVariantShortUid || variant.shortUid === exp.activeVariantShortUid;
+                    
+                    console.log(`    Variant "${variant.name || variant.uid}":`, {
+                      audiences: audienceNames.length > 0 ? audienceNames.join(', ') : 'NONE ❌',
+                      hasContent: !!(variant.entryUid || variant.entry || variant.content),
+                      contentEntry: variant.entryUid || variant.entry || variant.content || 'MISSING ❌',
+                      isActive: isActive ? '✅ YES' : '❌ NO'
+                    });
+                    
+                    // Check if this variant should match "First_time_users"
+                    if (matchesFirstTime && audienceNames.length > 0) {
+                      const shouldMatch = audienceNames.some((name: string) => 
+                        name.toLowerCase().includes('first') || 
+                        name === 'First_time_users' ||
+                        name === 'first_time_users'
+                      );
+                      if (shouldMatch && !isActive) {
+                        console.log(`    ⚠️🚨 CRITICAL ISSUE FOUND!`);
+                        console.log(`    → Variant has "First_time_users" audience: ✅`);
+                        console.log(`    → User matches audience (first_time_user=true): ✅`);
+                        console.log(`    → But variant is INACTIVE: ❌`);
+                        if (!(variant.entryUid || variant.entry || variant.content)) {
+                          console.log(`    → ROOT CAUSE: Content entry NOT linked to variant!`);
+                          console.log(`    → Action: Link content entry in Experience config or Settings > Variants`);
+                        } else {
+                          console.log(`    → Content entry IS linked: ${variant.entryUid || variant.entry || variant.content}`);
+                          console.log(`    → Possible causes: Experience not published, DAL not connected, or SDK delay`);
+                        }
+                      }
+                    }
+                  });
+                } else {
+                  console.log(`  ⚠️ Experience ${index + 1} has NO variants!`);
+                }
+              });
+              console.groupEnd();
+              
+              // 3. Variants (from experiences)
+              console.group('3️⃣ Variants');
+              const activeVariants = experiences.filter((exp: any) => exp.activeVariantShortUid !== null);
+              const inactiveVariants = experiences.filter((exp: any) => exp.activeVariantShortUid === null);
+              console.log('Active Variants:', activeVariants.length);
+              activeVariants.forEach((exp: any, index: number) => {
+                console.log(`  Variant ${index + 1}:`, {
+                  variantUid: exp.activeVariantShortUid,
+                  experienceUid: exp.shortUid
+                });
+              });
+              console.log('Inactive Variants:', inactiveVariants.length);
+              inactiveVariants.forEach((exp: any, index: number) => {
+                console.log(`  Variant ${index + 1}:`, {
+                  variantUid: 'null (no active variant)',
+                  experienceUid: exp.shortUid,
+                  reason: 'User attributes may not match audience rules'
+                });
+              });
+              console.groupEnd();
+              
+              // 4. Audiences (from your Contentstack Personalize setup)
+              console.group('4️⃣ Audiences');
+              console.log('Configured Audiences:');
+              console.log('  1. "users_not_applied_30s"');
+              console.log('     Rules: time_on_site > 30 AND has_clicked_apply_now = false');
+              const matchesUsersNotApplied = timeOnSite > 30 && applyNowClicked === false;
+              console.log('     Match Status:', {
+                time_on_site: timeOnSite > 30 ? `✅ Matches (${timeOnSite} > 30)` : `❌ Does not match (${timeOnSite} <= 30)`,
+                has_clicked_apply_now: applyNowClicked === false ? '✅ Matches (false)' : '❌ Does not match (true)',
+                overall: matchesUsersNotApplied ? '✅ User matches audience' : '❌ User does not match',
+                note: timeOnSite <= 30 ? '⏳ Wait 30+ seconds for this audience to match' : ''
+              });
+              console.log('  2. "First_time_users"');
+              console.log('     Rules: first_time_user = true');
+              const matchesFirstTime = isFirstTimeUserCheck === true;
+              console.log('     Match Status:', {
+                first_time_user: isFirstTimeUserCheck ? '✅ Matches (true)' : '❌ Does not match (false)',
+                overall: matchesFirstTime ? '✅ User matches audience' : '❌ User does not match',
+                note: matchesFirstTime ? '💡 This should activate a variant if content is linked!' : ''
+              });
+              // 5. Variant Entries (Content) - Fetch first for diagnosis
+              console.group('5️⃣ Variant Entries (Content)');
+              const { getPersonalizedContent } = await import('@/lib/contentstack-personalize');
+              const personalizeContent = await getPersonalizedContent('personalized_banner');
+              
+              console.log('\n🔍 Diagnosis:');
+              if (!matchesUsersNotApplied && !matchesFirstTime) {
+                console.log('  ⚠️ No audiences match - no variants will be active');
+                console.log('  💡 Wait 30+ seconds for "users_not_applied_30s" to match');
+              } else if (matchesFirstTime && activeVariants.length === 0) {
+                console.log('  ⚠️ "First_time_users" matches but no variant is active!');
+                console.log('  🔴 CRITICAL ISSUES TO CHECK:');
+                console.log('  1. Content Linking (MOST COMMON):');
+                console.log('     → Go to Contentstack > Settings > Variants');
+                console.log('     → Find your variant (e.g., "first_time_banner")');
+                console.log('     → Click "Link" and select your banner entry');
+                console.log('     → Ensure content type is "Personalized Banner"');
+                console.log('  2. Variant-Audience Assignment:');
+                console.log('     → Go to Experience > Configuration');
+                console.log('     → Verify variant is assigned to "First_time_users" audience');
+                console.log('  3. Experience Status:');
+                console.log('     → Ensure experience is "Active" (not Draft/Paused)');
+                console.log('     → Check if experience is published');
+                console.log('  4. SDK Processing:');
+                console.log('     → Try refreshing page after 2-3 seconds');
+                console.log('     → Attributes may need time to propagate');
+              } else if (matchesUsersNotApplied && timeOnSite <= 30) {
+                console.log('  ⏳ "users_not_applied_30s" will match after 30 seconds');
+              } else if (matchesUsersNotApplied && activeVariants.length === 0) {
+                console.log('  ⚠️ "users_not_applied_30s" matches but no variant is active!');
+                console.log('  🔴 Check the same issues as above (content linking, variant assignment, etc.)');
+              }
+              console.log('\n📋 Quick Checklist:');
+              console.log('  ✅ Attributes sent correctly:', Object.keys(testAttributes).join(', '));
+              console.log('  ✅ Experiences retrieved:', experiences.length);
+              console.log('  ❌ Active variants:', activeVariants.length, '(should be > 0 if audience matches)');
+              console.log('  ❌ Variant content:', personalizeContent ? 'Found' : 'Missing');
+              console.log('Has Variant Entry:', !!personalizeContent);
+              console.log('Content Type:', typeof personalizeContent);
+              if (personalizeContent) {
+                console.log('✅ Variant content found!');
+                console.log('Entry Keys:', Object.keys(personalizeContent));
+                console.log('Entry Preview:', {
+                  banner_title: personalizeContent.banner_title,
+                  banner_message: personalizeContent.banner_message,
+                  cta_text: personalizeContent.cta_text,
+                  enabled: personalizeContent.enabled
+                });
+                console.log('Full Entry Data:', personalizeContent);
+              } else {
+                console.log('❌ No variant entry returned');
+                console.log('\n🔴 ROOT CAUSE ANALYSIS:');
+                if (activeVariants.length === 0) {
+                  console.log('  → No active variants (this is why no content is returned)');
+                  console.log('  → Variants are inactive because:');
+                  if (matchesFirstTime) {
+                    console.log('     • "First_time_users" audience matches, but variant still inactive');
+                    console.log('     • Most likely: Content not linked to variant in Settings > Variants');
+                  } else if (matchesUsersNotApplied) {
+                    console.log('     • "users_not_applied_30s" audience matches, but variant still inactive');
+                    console.log('     • Most likely: Content not linked to variant in Settings > Variants');
+                  } else {
+                    console.log('     • No audiences match user attributes');
+                  }
+                } else {
+                  console.log('  → Variants are active but no content returned');
+                  console.log('  → This means: Content is NOT linked to the active variant');
+                  console.log('  → Action: Go to Settings > Variants and link content entry');
+                }
+                console.log('\n💡 Content Linking Steps:');
+                console.log('  1. Go to Contentstack > Settings > Variants');
+                console.log('  2. Find your variant (e.g., "first_time_banner" or "Test_banner")');
+                console.log('  3. Click "Link" button next to the variant');
+                console.log('  4. Select your "Personalized Banner" entry');
+                console.log('  5. Save and publish');
+                console.log('  6. Refresh this page');
+              }
+              console.groupEnd();
+              
+              console.groupEnd(); // End complete summary
+            } catch (error) {
+              console.error('❌ Error during initial personalization check:', error);
+            }
+          }, 500); // Small delay to ensure SDK is fully ready
           
           // If banner should be shown and we haven't fetched personalized content yet, 
           // trigger a fetch now that SDK is ready
@@ -128,72 +445,165 @@ export default function PersonalizedBanner({
               const applyNowClicked = localStorage.getItem("apply_now_clicked") === "true";
               
               try {
-                await setPersonalizeAttributes({
+                // Set attributes first - matching your Contentstack Personalize setup
+                // Attributes: time_on_site, has_clicked_apply_now, first_time_user
+                // Audiences: users_not_applied_30s (time_on_site > 30 AND has_clicked_apply_now = false)
+                //           First_time_users (first_time_user = true)
+                const isFirstTimeUser = !localStorage.getItem("session_start_time") || 
+                                        localStorage.getItem("first_visit") === null;
+                
+                const userAttributes = {
                   time_on_site: timeOnSite,
                   has_clicked_apply_now: applyNowClicked,
-                  user_segment: applyNowClicked ? undefined : "users_not_applied_30s",
-                });
+                  first_time_user: isFirstTimeUser,
+                };
+                
+                await setPersonalizeAttributes(userAttributes);
                 
                 await new Promise(resolve => setTimeout(resolve, 200));
                 
                 const experiences = await getPersonalizeExperiences();
-                console.log('🔍 PersonalizedBanner: Checking experiences', {
-                  experiencesCount: experiences.length,
-                  experiences: experiences,
-                  activeVariants: experiences.filter((exp: any) => exp.activeVariantShortUid !== null).length,
-                  inactiveVariants: experiences.filter((exp: any) => exp.activeVariantShortUid === null).length
+                
+                // Comprehensive summary log for all 5 items
+                console.group('📋 PersonalizedBanner: Complete Personalization Summary');
+                
+                // 1. Attributes
+                console.group('1️⃣ Attributes (Sent to SDK)');
+                console.table(userAttributes);
+                Object.entries(userAttributes).forEach(([key, value]) => {
+                  console.log(`  ${key}:`, value, `(${typeof value})`);
                 });
+                console.groupEnd();
+                
+                // 2. Experiences
+                console.group('2️⃣ Experiences');
+                console.log('Total:', experiences.length);
+                experiences.forEach((exp: any, index: number) => {
+                  console.log(`  Experience ${index + 1}:`, {
+                    shortUid: exp.shortUid,
+                    hasActiveVariant: exp.activeVariantShortUid !== null,
+                    activeVariantUid: exp.activeVariantShortUid
+                  });
+                });
+                console.groupEnd();
+                
+                // 3. Variants (from experiences)
+                console.group('3️⃣ Variants');
+                const activeVariants = experiences.filter((exp: any) => exp.activeVariantShortUid !== null);
+                const inactiveVariants = experiences.filter((exp: any) => exp.activeVariantShortUid === null);
+                console.log('Active Variants:', activeVariants.length);
+                activeVariants.forEach((exp: any, index: number) => {
+                  console.log(`  Variant ${index + 1}:`, {
+                    variantUid: exp.activeVariantShortUid,
+                    experienceUid: exp.shortUid
+                  });
+                });
+                console.log('Inactive Variants:', inactiveVariants.length);
+                inactiveVariants.forEach((exp: any, index: number) => {
+                  console.log(`  Variant ${index + 1}:`, {
+                    variantUid: 'null (no active variant)',
+                    experienceUid: exp.shortUid,
+                    reason: 'User attributes may not match audience rules'
+                  });
+                });
+                console.groupEnd();
+                
+                // 4. Audiences (inferred from variant configuration)
+                console.group('4️⃣ Audiences');
+                console.log('Expected Audience: "users_not_applied_30s"');
+                console.log('Audience Rules:');
+                console.log('  - time_on_site > 30');
+                console.log('  - has_clicked_apply_now = false');
+                console.log('Current User Match:', {
+                  time_on_site: timeOnSite >= 30 ? '✅ Matches' : '❌ Does not match',
+                  has_clicked_apply_now: applyNowClicked === false ? '✅ Matches' : '❌ Does not match'
+                });
+                console.groupEnd();
+                
+                console.groupEnd(); // End complete summary
+                
+                // Detailed logging for experiences and variants
+                console.group('🎯 PersonalizedBanner: Experience & Variant Analysis');
+                console.log('Total Experiences:', experiences.length);
+                console.log('Active Variants:', experiences.filter((exp: any) => exp.activeVariantShortUid !== null).length);
+                console.log('Inactive Variants:', experiences.filter((exp: any) => exp.activeVariantShortUid === null).length);
+                
+                experiences.forEach((exp: any, index: number) => {
+                  console.group(`Experience ${index + 1}`);
+                  console.log('Short UID:', exp.shortUid);
+                  console.log('Active Variant UID:', exp.activeVariantShortUid);
+                  console.log('Has Active Variant:', exp.activeVariantShortUid !== null);
+                  console.log('Full Experience Data:', exp);
+                  console.groupEnd();
+                });
+                console.groupEnd();
                 
                 // Check if any experience has an active variant
                 const hasActiveVariant = experiences.some((exp: any) => exp.activeVariantShortUid !== null);
                 if (!hasActiveVariant) {
-                  console.warn('⚠️ PersonalizedBanner: No active variants found!', {
-                    reason: 'User attributes may not match audience rules',
-                    userAttributes: {
-                      time_on_site: timeOnSite,
-                      has_clicked_apply_now: applyNowClicked,
-                      user_segment: applyNowClicked ? undefined : "users_not_applied_30s"
+                  console.group('⚠️ PersonalizedBanner: No Active Variants');
+                  console.warn('Reason: User attributes may not match audience rules');
+                  console.log('\n📊 User Attributes Sent:');
+                  const isFirstTimeUser = !localStorage.getItem("session_start_time") || 
+                                          localStorage.getItem("first_visit") === null;
+                  
+                  console.log({
+                    time_on_site: {
+                      value: timeOnSite,
+                      type: typeof timeOnSite,
+                      shouldMatch: timeOnSite > 30 ? '✅ YES (> 30)' : `❌ NO (${timeOnSite} <= 30)`
                     },
-                    attributeDetails: {
-                      time_on_site: {
-                        value: timeOnSite,
-                        type: typeof timeOnSite,
-                        shouldMatch: timeOnSite >= 30 ? 'YES (>= 30)' : 'NO (< 30)'
-                      },
-                      has_clicked_apply_now: {
-                        value: applyNowClicked,
-                        type: typeof applyNowClicked,
-                        shouldMatch: applyNowClicked === false ? 'YES (false)' : 'NO (true)'
-                      },
-                      user_segment: {
-                        value: applyNowClicked ? undefined : "users_not_applied_30s",
-                        type: typeof (applyNowClicked ? undefined : "users_not_applied_30s")
-                      }
+                    has_clicked_apply_now: {
+                      value: applyNowClicked,
+                      type: typeof applyNowClicked,
+                      shouldMatch: applyNowClicked === false ? '✅ YES (false)' : '❌ NO (true)'
                     },
-                    experiences: experiences.map((exp: any) => ({
-                      shortUid: exp.shortUid,
-                      activeVariantShortUid: exp.activeVariantShortUid,
-                      hasActiveVariant: exp.activeVariantShortUid !== null
-                    })),
-                    troubleshooting: [
-                      '1. Check if audience rules match these exact attribute names: time_on_site, has_clicked_apply_now',
-                      '2. Verify attribute types: time_on_site should be number, has_clicked_apply_now should be boolean',
-                      '3. Check if audience condition is: time_on_site > 30 AND has_clicked_apply_now = false',
-                      '4. Ensure the variant is linked to the correct audience',
-                      '5. Check if the experience is published/active'
-                    ],
-                    suggestion: 'Check audience rules in Contentstack Personalize dashboard'
+                    first_time_user: {
+                      value: isFirstTimeUser,
+                      type: typeof isFirstTimeUser,
+                      shouldMatch: isFirstTimeUser ? '✅ YES (true)' : '❌ NO (false)'
+                    }
                   });
+                  console.log('\n🔍 Configured Audience Rules:');
+                  console.log('Audience "users_not_applied_30s":');
+                  console.log('  - time_on_site: Number greater than 30');
+                  console.log('  - has_clicked_apply_now: Is false');
+                  console.log('Audience "First_time_users":');
+                  console.log('  - first_time_user: Is true');
+                  console.log('\n💡 Troubleshooting:');
+                  console.log('1. Check if audience rules match these exact attribute names');
+                  console.log('2. Verify attribute types match (number, boolean)');
+                  console.log('3. Ensure variant is linked to the correct audience');
+                  console.log('4. Check if content is linked to the variant');
+                  console.log('5. Verify experience is published/active');
+                  console.groupEnd();
                 }
                 
                 const { getPersonalizedContent } = await import('@/lib/contentstack-personalize');
                 const personalizeContent = await getPersonalizedContent('personalized_banner');
                 
-                console.log('🔍 PersonalizedBanner: Content check result', {
-                  hasContent: !!personalizeContent,
-                  contentType: typeof personalizeContent,
-                  contentKeys: personalizeContent ? Object.keys(personalizeContent) : []
-                });
+                // 5. Variant Entries (Content)
+                console.group('5️⃣ Variant Entries (Content)');
+                console.log('Has Variant Entry:', !!personalizeContent);
+                console.log('Content Type:', typeof personalizeContent);
+                if (personalizeContent) {
+                  console.log('Entry Keys:', Object.keys(personalizeContent));
+                  console.log('Entry Preview:', {
+                    banner_title: personalizeContent.banner_title,
+                    banner_message: personalizeContent.banner_message,
+                    cta_text: personalizeContent.cta_text,
+                    enabled: personalizeContent.enabled
+                  });
+                  console.log('Full Entry Data:', personalizeContent);
+                  console.log('Full Entry JSON:', JSON.stringify(personalizeContent, null, 2));
+                } else {
+                  console.log('❌ No variant entry returned');
+                  console.log('Possible reasons:');
+                  console.log('  - Content not linked to variant');
+                  console.log('  - No active variant (audience rules not matched)');
+                  console.log('  - Content type name mismatch');
+                }
+                console.groupEnd();
                 
                 if (personalizeContent) {
                   console.log('✅ PersonalizedBanner: Using personalized content from Contentstack Personalize!', {
@@ -249,10 +659,15 @@ export default function PersonalizedBanner({
       console.log('ℹ️ PersonalizedBanner: No Personalize Project UID found, using fallback method');
       personalizeSDKReadyRef.current = false;
     }
-  }, []);
+  }, [finalIsEnabled]);
 
   // Check localStorage for existing state
   useEffect(() => {
+    // Don't run if banner is disabled
+    if (!finalIsEnabled) {
+      return;
+    }
+    
     const storageKey = persistDismissal ? "banner_dismissed_permanent" : "banner_dismissed_session";
     const sessionStartKey = "session_start_time"; // Declare early so it can be used in dismissal logic
     const dismissed = localStorage.getItem(storageKey);
@@ -311,7 +726,7 @@ export default function PersonalizedBanner({
     }
 
     // Get session start time or set it
-    let sessionStartTime = localStorage.getItem(sessionStartKey);
+    const sessionStartTime = localStorage.getItem(sessionStartKey);
     
     // Only set new session start if it wasn't already set by dismissal logic above
     if (!sessionStartTime) {
@@ -346,24 +761,121 @@ export default function PersonalizedBanner({
             try {
               console.log('🔄 PersonalizedBanner: Fetching content via Contentstack Personalize SDK...');
               
-              // Update user attributes
-              await setPersonalizeAttributes({
+              // Set attributes first - matching your Contentstack Personalize setup
+              // Attributes: time_on_site, has_clicked_apply_now, first_time_user
+              // Audiences: users_not_applied_30s (time_on_site > 30 AND has_clicked_apply_now = false)
+              //           First_time_users (first_time_user = true)
+              const isFirstTimeUserCheck = !localStorage.getItem("session_start_time") || 
+                                      localStorage.getItem("first_visit") === null;
+              
+              const userAttributes = {
                 time_on_site: timeOnSite,
                 has_clicked_apply_now: applyNowClicked,
-                user_segment: applyNowClicked ? undefined : "users_not_applied_30s",
-              });
+                first_time_user: isFirstTimeUserCheck,
+              };
+              
+              await setPersonalizeAttributes(userAttributes);
               
               // Wait a bit to ensure attributes are set
-              await new Promise(resolve => setTimeout(resolve, 100));
+              await new Promise(resolve => setTimeout(resolve, 200));
               
               // Get active experiences
               const experiences = await getPersonalizeExperiences();
+              
+              // Comprehensive summary log for all 5 items
+              console.group('📋 PersonalizedBanner: Complete Personalization Summary');
+              
+              // 1. Attributes
+              console.group('1️⃣ Attributes (Sent to SDK)');
+              console.table(userAttributes);
+              Object.entries(userAttributes).forEach(([key, value]) => {
+                if (value !== undefined) {
+                  console.log(`  ${key}:`, value, `(${typeof value})`);
+                }
+              });
+              console.groupEnd();
+              
+              // 2. Experiences
+              console.group('2️⃣ Experiences');
+              console.log('Total:', experiences.length);
+              experiences.forEach((exp: any, index: number) => {
+                console.log(`  Experience ${index + 1}:`, {
+                  shortUid: exp.shortUid,
+                  hasActiveVariant: exp.activeVariantShortUid !== null,
+                  activeVariantUid: exp.activeVariantShortUid
+                });
+              });
+              console.groupEnd();
+              
+              // 3. Variants (from experiences)
+              console.group('3️⃣ Variants');
+              const activeVariants = experiences.filter((exp: any) => exp.activeVariantShortUid !== null);
+              const inactiveVariants = experiences.filter((exp: any) => exp.activeVariantShortUid === null);
+              console.log('Active Variants:', activeVariants.length);
+              activeVariants.forEach((exp: any, index: number) => {
+                console.log(`  Variant ${index + 1}:`, {
+                  variantUid: exp.activeVariantShortUid,
+                  experienceUid: exp.shortUid
+                });
+              });
+              console.log('Inactive Variants:', inactiveVariants.length);
+              inactiveVariants.forEach((exp: any, index: number) => {
+                console.log(`  Variant ${index + 1}:`, {
+                  variantUid: 'null (no active variant)',
+                  experienceUid: exp.shortUid,
+                  reason: 'User attributes may not match audience rules'
+                });
+              });
+              console.groupEnd();
+              
+              // 4. Audiences (from your Contentstack Personalize setup)
+              console.group('4️⃣ Audiences');
+              console.log('Configured Audiences:');
+              console.log('  1. "users_not_applied_30s"');
+              console.log('     Rules: time_on_site > 30 AND has_clicked_apply_now = false');
+              console.log('     Match Status:', {
+                time_on_site: timeOnSite > 30 ? '✅ Matches (> 30)' : `❌ Does not match (${timeOnSite} <= 30)`,
+                has_clicked_apply_now: applyNowClicked === false ? '✅ Matches (false)' : '❌ Does not match (true)',
+                overall: timeOnSite > 30 && applyNowClicked === false ? '✅ User matches audience' : '❌ User does not match'
+              });
+              console.log('  2. "First_time_users"');
+              console.log('     Rules: first_time_user = true');
+              console.log('     Match Status:', {
+                first_time_user: isFirstTimeUserCheck ? '✅ Matches (true)' : '❌ Does not match (false)',
+                overall: isFirstTimeUserCheck ? '✅ User matches audience' : '❌ User does not match'
+              });
+              console.groupEnd();
+              
+              console.groupEnd(); // End complete summary
               
               // Get personalized content from Personalize
               // Note: This requires @contentstack/personalize-edge-sdk to be installed
               // The getPersonalizedContent function is in contentstack-personalize.ts
               const { getPersonalizedContent } = await import('@/lib/contentstack-personalize');
               const personalizeContent = await getPersonalizedContent('personalized_banner');
+              
+              // 5. Variant Entries (Content)
+              console.group('5️⃣ Variant Entries (Content)');
+              console.log('Has Variant Entry:', !!personalizeContent);
+              console.log('Content Type:', typeof personalizeContent);
+              if (personalizeContent) {
+                console.log('Entry Keys:', Object.keys(personalizeContent));
+                console.log('Entry Preview:', {
+                  banner_title: personalizeContent.banner_title,
+                  banner_message: personalizeContent.banner_message,
+                  cta_text: personalizeContent.cta_text,
+                  enabled: personalizeContent.enabled
+                });
+                console.log('Full Entry Data:', personalizeContent);
+                console.log('Full Entry JSON:', JSON.stringify(personalizeContent, null, 2));
+              } else {
+                console.log('❌ No variant entry returned');
+                console.log('Possible reasons:');
+                console.log('  - Content not linked to variant');
+                console.log('  - No active variant (audience rules not matched)');
+                console.log('  - Content type name mismatch');
+              }
+              console.groupEnd();
               
               if (personalizeContent) {
                 console.log('✅ PersonalizedBanner: Using personalized content from Contentstack Personalize!', {
@@ -568,9 +1080,11 @@ export default function PersonalizedBanner({
     });
     
     // Update Personalize attributes
+    const isFirstTimeUserAfterClick = !localStorage.getItem("session_start_time") || 
+                                      localStorage.getItem("first_visit") === null;
     await setPersonalizeAttributes({
       has_clicked_apply_now: true,
-      user_segment: undefined, // Clear segment since they clicked
+      first_time_user: isFirstTimeUserAfterClick,
     });
     
     // Navigate to the link
