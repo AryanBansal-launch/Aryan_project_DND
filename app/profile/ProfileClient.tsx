@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { 
   Mail, 
   Phone, 
@@ -14,10 +14,40 @@ import {
   Award,
   Globe,
   Linkedin,
-  Github
+  Github,
+  Briefcase,
+  Sparkles,
+  Loader2,
+  ExternalLink,
+  DollarSign,
+  Building
 } from "lucide-react";
 import { User as UserType, WorkExperience, Education } from "@/lib/types";
 import { formatDate, getInitials } from "@/lib/utils";
+import Link from "next/link";
+
+// Type for recommended jobs from Algolia
+interface RecommendedJob {
+  id: string;
+  title: string;
+  description: string;
+  location: string;
+  type: string;
+  experience: string;
+  category: string;
+  skills: Array<{ skill: string; proficiency: string }>;
+  salary?: {
+    min: number;
+    max: number;
+    currency: string;
+    period: string;
+  };
+  isRemote: boolean;
+  isUrgent: boolean;
+  postedAt: string;
+  matchScore: number;
+  matchingSkillsCount: number;
+}
 
 interface ProfileClientProps {
   initialUser: UserType;
@@ -26,12 +56,61 @@ interface ProfileClientProps {
 export default function ProfileClient({ initialUser }: ProfileClientProps) {
   const [user, setUser] = useState<UserType>(initialUser);
   const [isEditing, setIsEditing] = useState(false);
+  
+  // Job recommendations state
+  const [recommendations, setRecommendations] = useState<RecommendedJob[]>([]);
+  const [isLoadingRecommendations, setIsLoadingRecommendations] = useState(false);
+  const [recommendationsError, setRecommendationsError] = useState<string | null>(null);
+  const [showRecommendations, setShowRecommendations] = useState(false);
 
-  const handleSaveProfile = () => {
+  // Fetch job recommendations based on user skills
+  const fetchJobRecommendations = async (skills: string[]) => {
+    if (skills.length === 0) {
+      setRecommendations([]);
+      setShowRecommendations(false);
+      return;
+    }
+
+    setIsLoadingRecommendations(true);
+    setRecommendationsError(null);
+
+    try {
+      const response = await fetch('/api/jobs/recommendations', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          skills: skills,
+          limit: 6,
+        }),
+      });
+
+      const data = await response.json();
+
+      if (response.ok && data.recommendations) {
+        setRecommendations(data.recommendations);
+        setShowRecommendations(true);
+      } else {
+        setRecommendationsError(data.message || 'Failed to fetch recommendations');
+        setRecommendations([]);
+      }
+    } catch (error) {
+      console.error('Error fetching recommendations:', error);
+      setRecommendationsError('Failed to connect to recommendation service');
+      setRecommendations([]);
+    } finally {
+      setIsLoadingRecommendations(false);
+    }
+  };
+
+  const handleSaveProfile = async () => {
     // In a real app, this would save to an API
     console.log("Saving profile:", user);
-    alert("Profile saved successfully!");
     setIsEditing(false);
+    
+    // Fetch job recommendations based on updated skills
+    await fetchJobRecommendations(user.skills);
   };
 
   const handleCancelEdit = () => {
@@ -272,18 +351,34 @@ export default function ProfileClient({ initialUser }: ProfileClientProps) {
             <div className="bg-white rounded-lg shadow-sm border p-6">
               <div className="flex items-center justify-between mb-4">
                 <h2 className="text-lg font-semibold text-gray-900">Skills</h2>
-                {isEditing && (
-                  <button
-                    onClick={() => {
-                      const skill = prompt("Enter a new skill:");
-                      if (skill) addSkill(skill);
-                    }}
-                    className="text-blue-600 hover:text-blue-700 text-sm font-medium"
-                  >
-                    <Plus className="w-4 h-4 mr-1 inline" />
-                    Add Skill
-                  </button>
-                )}
+                <div className="flex items-center gap-2">
+                  {!isEditing && user.skills.length > 0 && (
+                    <button
+                      onClick={() => fetchJobRecommendations(user.skills)}
+                      disabled={isLoadingRecommendations}
+                      className="flex items-center gap-1 text-blue-600 hover:text-blue-700 text-sm font-medium disabled:opacity-50"
+                    >
+                      {isLoadingRecommendations ? (
+                        <Loader2 className="w-4 h-4 animate-spin" />
+                      ) : (
+                        <Sparkles className="w-4 h-4" />
+                      )}
+                      Find Matching Jobs
+                    </button>
+                  )}
+                  {isEditing && (
+                    <button
+                      onClick={() => {
+                        const skill = prompt("Enter a new skill:");
+                        if (skill) addSkill(skill);
+                      }}
+                      className="text-blue-600 hover:text-blue-700 text-sm font-medium"
+                    >
+                      <Plus className="w-4 h-4 mr-1 inline" />
+                      Add Skill
+                    </button>
+                  )}
+                </div>
               </div>
               <div className="flex flex-wrap gap-2">
                 {user.skills.map((skill, index) => (
@@ -304,6 +399,135 @@ export default function ProfileClient({ initialUser }: ProfileClientProps) {
                 ))}
               </div>
             </div>
+
+            {/* Job Recommendations Section */}
+            {showRecommendations && (
+              <div className="bg-gradient-to-r from-blue-50 to-indigo-50 rounded-lg shadow-sm border border-blue-200 p-6">
+                <div className="flex items-center justify-between mb-4">
+                  <div className="flex items-center gap-2">
+                    <Sparkles className="w-5 h-5 text-blue-600" />
+                    <h2 className="text-lg font-semibold text-gray-900">Recommended Jobs for You</h2>
+                  </div>
+                  <span className="text-sm text-gray-500">Based on your skills</span>
+                </div>
+
+                {isLoadingRecommendations ? (
+                  <div className="flex items-center justify-center py-8">
+                    <Loader2 className="w-6 h-6 text-blue-600 animate-spin mr-2" />
+                    <span className="text-gray-600">Finding matching jobs...</span>
+                  </div>
+                ) : recommendationsError ? (
+                  <div className="text-center py-8">
+                    <p className="text-red-600">{recommendationsError}</p>
+                    <button 
+                      onClick={() => fetchJobRecommendations(user.skills)}
+                      className="mt-2 text-blue-600 hover:text-blue-700 text-sm"
+                    >
+                      Try again
+                    </button>
+                  </div>
+                ) : recommendations.length === 0 ? (
+                  <div className="text-center py-8">
+                    <Briefcase className="w-12 h-12 text-gray-300 mx-auto mb-3" />
+                    <p className="text-gray-500">No matching jobs found for your skills.</p>
+                    <p className="text-sm text-gray-400 mt-1">Try adding more skills to get better recommendations.</p>
+                  </div>
+                ) : (
+                  <div className="space-y-4">
+                    {recommendations.map((job) => (
+                      <Link 
+                        key={job.id} 
+                        href={`/jobs/${job.id}`}
+                        className="block bg-white rounded-lg border border-gray-200 p-4 hover:shadow-md hover:border-blue-300 transition-all"
+                      >
+                        <div className="flex justify-between items-start">
+                          <div className="flex-1">
+                            <div className="flex items-center gap-2 mb-1">
+                              <h3 className="font-semibold text-gray-900 hover:text-blue-600">
+                                {job.title}
+                              </h3>
+                              {job.isUrgent && (
+                                <span className="bg-red-100 text-red-700 text-xs px-2 py-0.5 rounded-full">
+                                  Urgent
+                                </span>
+                              )}
+                              {job.isRemote && (
+                                <span className="bg-green-100 text-green-700 text-xs px-2 py-0.5 rounded-full">
+                                  Remote
+                                </span>
+                              )}
+                            </div>
+                            
+                            <div className="flex items-center gap-3 text-sm text-gray-500 mb-2">
+                              <span className="flex items-center gap-1">
+                                <MapPin className="w-3 h-3" />
+                                {job.location}
+                              </span>
+                              <span className="flex items-center gap-1">
+                                <Briefcase className="w-3 h-3" />
+                                {job.type}
+                              </span>
+                              {job.salary && (
+                                <span className="flex items-center gap-1">
+                                  <DollarSign className="w-3 h-3" />
+                                  {job.salary.currency}{job.salary.min.toLocaleString()} - {job.salary.currency}{job.salary.max.toLocaleString()}/{job.salary.period}
+                                </span>
+                              )}
+                            </div>
+
+                            {/* Matching Skills */}
+                            <div className="flex flex-wrap gap-1 mb-2">
+                              {job.skills.slice(0, 5).map((skill, idx) => {
+                                const isMatching = user.skills.some(
+                                  s => s.toLowerCase().includes(skill.skill.toLowerCase()) || 
+                                       skill.skill.toLowerCase().includes(s.toLowerCase())
+                                );
+                                return (
+                                  <span 
+                                    key={idx} 
+                                    className={`text-xs px-2 py-0.5 rounded-full ${
+                                      isMatching 
+                                        ? 'bg-green-100 text-green-700 font-medium' 
+                                        : 'bg-gray-100 text-gray-600'
+                                    }`}
+                                  >
+                                    {skill.skill}
+                                    {isMatching && ' ✓'}
+                                  </span>
+                                );
+                              })}
+                              {job.skills.length > 5 && (
+                                <span className="text-xs text-gray-400">+{job.skills.length - 5} more</span>
+                              )}
+                            </div>
+                          </div>
+
+                          {/* Match Score */}
+                          <div className="text-right ml-4">
+                            <div className="bg-blue-100 text-blue-700 px-3 py-1 rounded-full text-sm font-medium">
+                              {Math.round(job.matchScore * 100)}% Match
+                            </div>
+                            <p className="text-xs text-gray-500 mt-1">
+                              {job.matchingSkillsCount} skill{job.matchingSkillsCount !== 1 ? 's' : ''} match
+                            </p>
+                          </div>
+                        </div>
+                      </Link>
+                    ))}
+
+                    <div className="text-center pt-2">
+                      <Link 
+                        href="/jobs" 
+                        className="inline-flex items-center gap-1 text-blue-600 hover:text-blue-700 text-sm font-medium"
+                      >
+                        View all jobs
+                        <ExternalLink className="w-4 h-4" />
+                      </Link>
+                    </div>
+                  </div>
+                )}
+              </div>
+            )}
 
             {/* Work Experience */}
             <div className="bg-white rounded-lg shadow-sm border p-6">
