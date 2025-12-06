@@ -29,10 +29,86 @@ A comprehensive job portal built with Next.js 15, TypeScript, and Tailwind CSS. 
 - **Framework**: Next.js 15 with App Router
 - **Language**: TypeScript
 - **Styling**: Tailwind CSS 4
+- **CMS**: Contentstack (Headless CMS)
+- **Search**: Algolia
+- **Database**: NeonDB (PostgreSQL)
+- **Authentication**: NextAuth.js
+- **Hosting**: Contentstack Launch
 - **Icons**: Lucide React
 - **State Management**: React Hooks
 - **Date Handling**: date-fns
-- **Utilities**: clsx, tailwind-merge
+
+---
+
+## 📦 Contentstack Features Used
+
+This project leverages multiple Contentstack products and features for a complete headless CMS experience.
+
+### 1. Content Delivery SDK (`@contentstack/delivery-sdk`)
+
+| Feature | Description | Files |
+|---------|-------------|-------|
+| **Content Fetching** | Fetch jobs, companies, blogs, homepage, navigation | `lib/contentstack.ts` |
+| **Query Operations** | Filter content by URL, UID, slug | `getPage()`, `getJobByUid()`, `getBlogBySlug()` |
+| **Reference Resolution** | Fetch linked company data for jobs | `getJobs()`, `getJobByUid()` |
+| **Multi-locale Support** | Fetch content in English (en-us) and Hindi (hi-in) | `getBlogs(locale)`, `getBlogByUid(uid, locale)` |
+
+
+### 2. Management API
+
+| Feature | Description | Files |
+|---------|-------------|-------|
+| **Create Entries** | Create notification entries programmatically | `lib/contentstack-notifications.ts` |
+| **Update Entries** | Mark notifications as read | `markNotificationAsReadInContentstack()` |
+| **Delete Entries** | Remove notifications | `deleteNotificationFromContentstack()` |
+| **Publish Entries** | Auto-publish after create/update | `createNotificationInContentstack()` |
+
+### 3. Personalize Edge SDK (`@contentstack/personalize-edge-sdk`)
+
+| Feature | Description | Files |
+|---------|-------------|-------|
+| **User Attributes** | Track time_on_site, has_clicked_apply_now, first_time_user | `lib/contentstack-personalize.ts` |
+| **Audiences** | Match users to segments (e.g., "users_not_applied_30s", "First_time_users") | Personalize Dashboard |
+| **Experiences** | Deliver personalized banner content based on user behavior | `components/PersonalizedBanner.tsx` |
+| **Event Tracking** | Track banner impressions and CTA clicks | `trackPersonalizeEvent()` |
+| **Variant Content** | Fetch personalized content for matched audiences | `getPersonalizedContent()` |
+
+### 4. Webhooks
+
+| Webhook | Trigger | Action |
+|---------|---------|--------|
+| **New Job Notification** | Job entry published | Sends email to all registered users |
+
+
+### 5. Automate
+
+| Automation | Trigger | Action |
+|------------|---------|--------|
+| **Application Confirmation Email** | HTTP Request from `/api/applications/submit` | Sends confirmation email to applicant |
+| **New Job Alert Email** | HTTP Request from `/api/webhooks/new-job` | Sends job alert to all users |
+| **Algolia Index Sync** | Job entry publish event | Updates Algolia search index |
+| **Chatbot Context Feed** | Webhook trigger | Feeds content context to AI chatbot |
+
+### 6. Marketplace Apps
+
+| App | Purpose |
+|-----|---------|
+| **Algolia** | Search integration - syncs content types to Algolia for fast search |
+| **AI Chatbot** | Chatbot fed with content context via Marketplace app and Automate webhook |
+
+
+### 7. Content Types
+
+| Content Type | Purpose | Fields |
+|--------------|---------|--------|
+| **Job** | Job listings | title, description, requirements, responsibilities, company (ref), location, type, salary, skills, category, status |
+| **Company** | Company profiles | title, description, location, industry, size, logo, benefits |
+| **Blog Post** | Blog articles | title, slug, content, author, featured_image, category, tags |
+| **Homepage** | Homepage content | hero_title, hero_subtitle, featured_jobs, stats |
+| **Navigation** | Site navigation | nav_items (links array) |
+| **Notification** | User notifications | user_email, type, title, message, read, metadata |
+| **Personalized Banner** | Behavior-based banners | banner_title, banner_message, cta_text, cta_link, user_segment, enabled, priority |
+
 
 ## 📁 Project Structure
 
