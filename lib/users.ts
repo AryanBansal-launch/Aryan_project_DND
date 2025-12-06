@@ -10,6 +10,12 @@ export interface User {
   updated_at: Date;
 }
 
+// Simplified user info for notifications
+export interface UserBasicInfo {
+  email: string;
+  name: string;
+}
+
 // Get database connection
 const getDb = () => {
   if (!process.env.DATABASE_URL) {
@@ -94,6 +100,45 @@ export const createUser = async (email: string, password: string, name: string):
 // Verify password
 export const verifyPassword = async (password: string, hashedPassword: string): Promise<boolean> => {
   return bcrypt.compare(password, hashedPassword);
+};
+
+// ============================================
+// GET ALL USERS (for notifications)
+// ============================================
+
+// Get all registered users (for sending notifications)
+export const getAllUsers = async (): Promise<UserBasicInfo[]> => {
+  try {
+    const sql = getDb();
+    const result = await sql`
+      SELECT email, name
+      FROM users
+      ORDER BY created_at DESC
+    `;
+    
+    return result.map((row: any) => ({
+      email: row.email,
+      name: row.name,
+    }));
+  } catch (error) {
+    console.error('Error getting all users:', error);
+    return [];
+  }
+};
+
+// Get user count
+export const getUserCount = async (): Promise<number> => {
+  try {
+    const sql = getDb();
+    const result = await sql`
+      SELECT COUNT(*) as count FROM users
+    `;
+    
+    return parseInt(result[0]?.count || '0', 10);
+  } catch (error) {
+    console.error('Error getting user count:', error);
+    return 0;
+  }
 };
 
 // ============================================

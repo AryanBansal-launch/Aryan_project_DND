@@ -145,6 +145,40 @@ A comprehensive job portal built with Next.js 15, TypeScript, and Tailwind CSS. 
 - Skills and experience editing
 - Education and work history
 - Job preferences and settings
+- **AI-Powered Job Recommendations** based on user skills
+
+## 🎯 Job Recommendations (Algolia)
+
+The application uses **Algolia Search** to provide personalized job recommendations based on user skills.
+
+### How It Works
+
+1. User adds skills to their profile
+2. Skills are saved to NeonDB
+3. When user clicks "Find Matching Jobs", skills are sent to Algolia
+4. Algolia returns jobs matching ANY of the user's skills (fuzzy matching)
+5. Results are displayed with match scores
+
+### Features
+
+- ✅ Fuzzy matching (handles typos)
+- ✅ OR logic (matches jobs with ANY skill)
+- ✅ Match score ranking
+- ✅ Highlights matching skills
+
+### Setup
+
+1. Create an Algolia account at [algolia.com](https://www.algolia.com/)
+2. Create an index named `job`
+3. Configure searchable attributes: `title`, `description`, `skillNames`, `skillsText`, `category`
+4. Sync jobs using `/api/jobs/sync-algolia` endpoint
+5. Add environment variables:
+
+```env
+NEXT_PUBLIC_ALGOLIA_APP_ID=your-app-id
+NEXT_PUBLIC_ALGOLIA_SEARCH_KEY=your-search-key
+NEXT_PUBLIC_ALGOLIA_INDEX_NAME=job
+```
 
 ### Authentication (`/login`, `/register`)
 - Secure login and registration
@@ -158,6 +192,35 @@ A comprehensive job portal built with Next.js 15, TypeScript, and Tailwind CSS. 
 - Company management
 - User administration
 - Analytics and reporting
+- **Protected by Edge Function** - Requires username/password authentication
+
+## 🔐 Admin Panel Protection
+
+The `/admin` route is protected using a **Next.js Edge Function** (middleware) with Basic HTTP Authentication.
+
+### How It Works
+
+When accessing `/admin`:
+1. Edge function intercepts the request
+2. Checks for Basic Auth credentials
+3. Shows browser login prompt if not authenticated
+4. Grants access only with valid credentials
+
+### Configuration
+
+Set these environment variables:
+
+```env
+ADMIN_USERNAME=admin
+ADMIN_PASSWORD=your-secure-password
+```
+
+### Security Features
+
+- ✅ Runs at the edge (fast, before page loads)
+- ✅ Browser-native login prompt
+- ✅ No credentials stored in frontend
+- ✅ Works with Contentstack Launch
 
 ## 🔧 Customization
 
@@ -207,7 +270,133 @@ NEXTAUTH_SECRET=your-secret-key-here
 # Google OAuth Configuration
 GOOGLE_CLIENT_ID=your-google-client-id
 GOOGLE_CLIENT_SECRET=your-google-client-secret
+
+# Database Configuration (NeonDB PostgreSQL)
+DATABASE_URL=postgresql://[user]:[password]@[host]/[database]?sslmode=require
+
+# Algolia Search Configuration
+NEXT_PUBLIC_ALGOLIA_APP_ID=your-algolia-app-id
+NEXT_PUBLIC_ALGOLIA_SEARCH_KEY=your-search-only-api-key
+NEXT_PUBLIC_ALGOLIA_INDEX_NAME=job
+
+# Admin Panel Protection
+ADMIN_USERNAME=admin
+ADMIN_PASSWORD=your-secure-admin-password
+
+# Contentstack Automate - Email Notifications
+CONTENTSTACK_AUTOMATE_WEBHOOK_URL=https://app.contentstack.com/automations-api/run/your-application-webhook
+CONTENTSTACK_NEW_JOB_EMAIL_WEBHOOK=https://app.contentstack.com/automations-api/run/your-new-job-webhook
+CONTENTSTACK_WEBHOOK_SECRET=your-webhook-secret
 ```
+
+## 📧 Email Notifications
+
+The application includes automated email notifications powered by **Contentstack Automate**.
+
+### Features
+
+| Email Type | Trigger | Recipients |
+|------------|---------|------------|
+| **Application Confirmation** | User submits job application | Applicant |
+| **New Job Alert** | Admin publishes new job in CMS | All registered users |
+
+### Architecture
+
+```
+┌─────────────────┐     ┌──────────────────┐     ┌─────────────────┐     ┌──────────────┐
+│  New Job        │────▶│  Contentstack    │────▶│  Our API        │────▶│  Automate    │
+│  Published      │     │  Webhook         │     │  /api/webhooks  │     │  Email       │
+│  in CMS         │     │                  │     │  /new-job       │     │              │
+└─────────────────┘     └──────────────────┘     └─────────────────┘     └──────────────┘
+                                                        │
+                                                        ▼
+                                                 ┌─────────────────┐
+                                                 │  NeonDB         │
+                                                 │  (Get all users)│
+                                                 └─────────────────┘
+```
+
+### Setup: New Job Email Notifications
+
+#### Step 1: Create Contentstack Automate Workflow
+
+1. Go to **Contentstack → Automate → Create New Automation**
+2. Add **HTTP Request Trigger** (Step 1)
+3. Add **Email By Automate** action (Step 2)
+4. Configure the email:
+
+**To:** `{{1.body.recipient_email}}`
+
+**Subject:** `🚀 New Job Alert: {{1.body.job_title}}`
+
+**Body Type:** `HTML`
+
+**Body:**
+```html
+<!DOCTYPE html>
+<html>
+<head>
+  <style>
+    body { font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; }
+    .header { background: linear-gradient(135deg, #10b981, #059669); color: white; padding: 30px; text-align: center; border-radius: 8px 8px 0 0; }
+    .content { background: #f9fafb; padding: 30px; border: 1px solid #e5e7eb; }
+    .job-card { background: white; padding: 25px; margin: 20px 0; border-radius: 8px; box-shadow: 0 2px 8px rgba(0,0,0,0.1); }
+    .cta-button { display: inline-block; background: #2563eb; color: white; padding: 14px 32px; text-decoration: none; border-radius: 8px; font-weight: bold; }
+  </style>
+</head>
+<body>
+  <div class="header">
+    <h1>🔔 New Job Posted!</h1>
+  </div>
+  <div class="content">
+    <p>Hi {{1.body.recipient_name}},</p>
+    <div class="job-card">
+      <h2>{{1.body.job_title}}</h2>
+      <p>📍 {{1.body.job_location}} | 💼 {{1.body.job_type}} | 💰 {{1.body.job_salary}}</p>
+      <a href="{{1.body.job_url}}" class="cta-button">View Job →</a>
+    </div>
+  </div>
+</body>
+</html>
+```
+
+5. **Activate the Automation**
+6. Copy the HTTP Request Trigger URL to `CONTENTSTACK_NEW_JOB_EMAIL_WEBHOOK`
+
+#### Step 2: Create Contentstack Webhook
+
+1. Go to **Contentstack → Settings → Webhooks**
+2. Create new webhook:
+   - **Name:** `New Job Notification`
+   - **URL:** `https://your-domain.com/api/webhooks/new-job`
+   - **Events:** Entry → Publish → Job content type
+   - **Headers:** Add `x-webhook-secret: your-secret`
+
+#### Step 3: Test with Postman
+
+```bash
+curl -X POST "https://app.contentstack.com/automations-api/run/YOUR_WEBHOOK_ID" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "recipient_email": "test@example.com",
+    "recipient_name": "Test User",
+    "job_title": "Software Developer",
+    "job_location": "San Francisco, CA",
+    "job_type": "Full-time",
+    "job_experience": "Mid-Senior",
+    "job_salary": "$120,000 - $150,000",
+    "is_remote": "Yes",
+    "job_url": "https://yoursite.com/jobs/123",
+    "notification_date": "December 6, 2024"
+  }'
+```
+
+### API Endpoints
+
+| Endpoint | Method | Description |
+|----------|--------|-------------|
+| `/api/webhooks/new-job` | POST | Receives Contentstack webhook when job is published |
+| `/api/applications/submit` | POST | Submits job application and sends confirmation email |
 
 ### Google OAuth Setup
 1. Go to [Google Cloud Console](https://console.cloud.google.com/)
