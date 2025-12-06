@@ -395,6 +395,8 @@ export interface Notification {
 
 // Contentstack Notification type (matches CMS schema)
 export interface ContentstackNotification {
+  createdAt: string | undefined;
+  updatedAt: string | undefined;
   uid: string;
   user_id: string;
   user_email: string;
