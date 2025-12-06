@@ -57,11 +57,71 @@ export default function ProfileClient({ initialUser }: ProfileClientProps) {
   const [user, setUser] = useState<UserType>(initialUser);
   const [isEditing, setIsEditing] = useState(false);
   
+  // Profile loading state
+  const [isLoadingProfile, setIsLoadingProfile] = useState(true);
+  const [authProvider, setAuthProvider] = useState<string | null>(null);
+  
+  // Skills loading state
+  const [isLoadingSkills, setIsLoadingSkills] = useState(true);
+  const [isSavingSkills, setIsSavingSkills] = useState(false);
+  const [skillsError, setSkillsError] = useState<string | null>(null);
+  
   // Job recommendations state
   const [recommendations, setRecommendations] = useState<RecommendedJob[]>([]);
   const [isLoadingRecommendations, setIsLoadingRecommendations] = useState(false);
   const [recommendationsError, setRecommendationsError] = useState<string | null>(null);
   const [showRecommendations, setShowRecommendations] = useState(false);
+
+  // Load user profile and skills from database on mount
+  useEffect(() => {
+    const loadUserProfile = async () => {
+      setIsLoadingProfile(true);
+      setIsLoadingSkills(true);
+      setSkillsError(null);
+      
+      try {
+        // Fetch user profile (includes name, email, skills, auth provider)
+        const response = await fetch('/api/user/profile');
+        const data = await response.json();
+        
+        if (response.ok && data.profile) {
+          const profile = data.profile;
+          
+          // Update user state with real data from session/database
+          setUser(prev => ({
+            ...prev,
+            email: profile.email || prev.email,
+            firstName: profile.firstName || prev.firstName,
+            lastName: profile.lastName || prev.lastName,
+            skills: profile.skills || prev.skills,
+          }));
+          
+          // Track auth provider for display purposes
+          setAuthProvider(profile.authProvider);
+          
+          console.log('Loaded user profile:', {
+            email: profile.email,
+            name: `${profile.firstName} ${profile.lastName}`,
+            authProvider: profile.authProvider,
+            skillsCount: profile.skills?.length || 0
+          });
+        } else if (response.status === 401) {
+          // User not logged in - use initial/mock data
+          console.log('User not logged in, using initial data');
+        } else {
+          console.error('Failed to load profile:', data.message);
+        }
+      } catch (error) {
+        console.error('Error loading profile:', error);
+        // Keep using initial data on error
+      } finally {
+        setIsLoadingProfile(false);
+        setIsLoadingSkills(false);
+      }
+    };
+
+    loadUserProfile();
+  }, []);
 
   // Fetch job recommendations based on user skills
   const fetchJobRecommendations = async (skills: string[]) => {
@@ -104,13 +164,52 @@ export default function ProfileClient({ initialUser }: ProfileClientProps) {
     }
   };
 
-  const handleSaveProfile = async () => {
-    // In a real app, this would save to an API
-    console.log("Saving profile:", user);
-    setIsEditing(false);
+  // Save skills to database
+  const saveSkillsToDatabase = async (skills: string[]) => {
+    setIsSavingSkills(true);
+    setSkillsError(null);
     
-    // Fetch job recommendations based on updated skills
-    await fetchJobRecommendations(user.skills);
+    try {
+      const response = await fetch('/api/user/skills', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ skills }),
+      });
+
+      const data = await response.json();
+
+      if (response.ok) {
+        console.log('Skills saved to database:', data.skills);
+        return true;
+      } else if (response.status === 401) {
+        setSkillsError('Please log in to save your skills');
+        return false;
+      } else {
+        setSkillsError(data.message || 'Failed to save skills');
+        return false;
+      }
+    } catch (error) {
+      console.error('Error saving skills:', error);
+      setSkillsError('Failed to connect to server');
+      return false;
+    } finally {
+      setIsSavingSkills(false);
+    }
+  };
+
+  const handleSaveProfile = async () => {
+    console.log("Saving profile:", user);
+    
+    // Save skills to database
+    const skillsSaved = await saveSkillsToDatabase(user.skills);
+    
+    if (skillsSaved) {
+      setIsEditing(false);
+      // Fetch job recommendations based on updated skills
+      await fetchJobRecommendations(user.skills);
+    }
   };
 
   const handleCancelEdit = () => {
@@ -245,13 +344,29 @@ export default function ProfileClient({ initialUser }: ProfileClientProps) {
                   </div>
                 ) : (
                   <>
-                    <h1 className="text-2xl font-bold text-gray-900">
-                      {user.firstName} {user.lastName}
-                    </h1>
+                    <div className="flex items-center gap-2 flex-wrap">
+                      <h1 className="text-2xl font-bold text-gray-900">
+                        {isLoadingProfile ? (
+                          <span className="text-gray-400">Loading...</span>
+                        ) : (
+                          `${user.firstName} ${user.lastName}`
+                        )}
+                      </h1>
+                      {/* Auth Provider Badge */}
+                      {authProvider && (
+                        <span className={`text-xs px-2 py-0.5 rounded-full whitespace-nowrap ${
+                          authProvider === 'google' 
+                            ? 'bg-red-100 text-red-700' 
+                            : 'bg-blue-100 text-blue-700'
+                        }`}>
+                          {authProvider === 'google' ? '◆ Google' : '✉ Email'}
+                        </span>
+                      )}
+                    </div>
                     <p className="text-gray-600">{user.experience} of experience</p>
                   </>
                 )}
-                <div className="flex items-center space-x-4 mt-2 text-sm text-gray-500">
+                <div className="flex flex-wrap items-center gap-x-4 gap-y-1 mt-2 text-sm text-gray-500">
                   {isEditing ? (
                     <div className="grid grid-cols-1 gap-2 w-full mt-2">
                       <input
@@ -279,16 +394,16 @@ export default function ProfileClient({ initialUser }: ProfileClientProps) {
                   ) : (
                     <>
                       <div className="flex items-center">
-                        <MapPin className="w-4 h-4 mr-1" />
-                        <span>{user.location}</span>
+                        <MapPin className="w-4 h-4 mr-1 flex-shrink-0" />
+                        <span className="break-all">{user.location}</span>
                       </div>
                       <div className="flex items-center">
-                        <Mail className="w-4 h-4 mr-1" />
-                        <span>{user.email}</span>
+                        <Mail className="w-4 h-4 mr-1 flex-shrink-0" />
+                        <span className="break-all">{user.email}</span>
                       </div>
                       {user.phone && (
                         <div className="flex items-center">
-                          <Phone className="w-4 h-4 mr-1" />
+                          <Phone className="w-4 h-4 mr-1 flex-shrink-0" />
                           <span>{user.phone}</span>
                         </div>
                       )}
@@ -302,14 +417,25 @@ export default function ProfileClient({ initialUser }: ProfileClientProps) {
                 <>
                   <button
                     onClick={handleSaveProfile}
-                    className="flex items-center px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700"
+                    disabled={isSavingSkills}
+                    className="flex items-center px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed"
                   >
-                    <Save className="w-4 h-4 mr-2" />
-                    Save
+                    {isSavingSkills ? (
+                      <>
+                        <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                        Saving...
+                      </>
+                    ) : (
+                      <>
+                        <Save className="w-4 h-4 mr-2" />
+                        Save
+                      </>
+                    )}
                   </button>
                   <button
                     onClick={handleCancelEdit}
-                    className="flex items-center px-4 py-2 border border-gray-300 rounded-md hover:bg-gray-50"
+                    disabled={isSavingSkills}
+                    className="flex items-center px-4 py-2 border border-gray-300 rounded-md hover:bg-gray-50 disabled:opacity-50"
                   >
                     <X className="w-4 h-4 mr-2" />
                     Cancel
@@ -350,7 +476,12 @@ export default function ProfileClient({ initialUser }: ProfileClientProps) {
             {/* Skills */}
             <div className="bg-white rounded-lg shadow-sm border p-6">
               <div className="flex items-center justify-between mb-4">
-                <h2 className="text-lg font-semibold text-gray-900">Skills</h2>
+                <div className="flex items-center gap-2">
+                  <h2 className="text-lg font-semibold text-gray-900">Skills</h2>
+                  {isLoadingSkills && (
+                    <Loader2 className="w-4 h-4 text-gray-400 animate-spin" />
+                  )}
+                </div>
                 <div className="flex items-center gap-2">
                   {!isEditing && user.skills.length > 0 && (
                     <button
@@ -380,23 +511,39 @@ export default function ProfileClient({ initialUser }: ProfileClientProps) {
                   )}
                 </div>
               </div>
+              
+              {/* Skills error message */}
+              {skillsError && (
+                <div className="mb-3 text-sm text-amber-600 bg-amber-50 px-3 py-2 rounded-md">
+                  {skillsError}
+                </div>
+              )}
+              
               <div className="flex flex-wrap gap-2">
-                {user.skills.map((skill, index) => (
-                  <span
-                    key={index}
-                    className="bg-blue-100 text-blue-800 text-sm px-3 py-1 rounded-full flex items-center"
-                  >
-                    {skill}
-                    {isEditing && (
-                      <button
-                        onClick={() => removeSkill(skill)}
-                        className="ml-2 text-blue-600 hover:text-blue-800"
-                      >
-                        <X className="w-3 h-3" />
-                      </button>
-                    )}
+                {isLoadingSkills ? (
+                  <span className="text-gray-400 text-sm">Loading your skills...</span>
+                ) : user.skills.length === 0 ? (
+                  <span className="text-gray-400 text-sm">
+                    {isEditing ? 'Click "Add Skill" to add your skills' : 'No skills added yet. Click "Edit Profile" to add skills.'}
                   </span>
-                ))}
+                ) : (
+                  user.skills.map((skill, index) => (
+                    <span
+                      key={index}
+                      className="bg-blue-100 text-blue-800 text-sm px-3 py-1 rounded-full flex items-center"
+                    >
+                      {skill}
+                      {isEditing && (
+                        <button
+                          onClick={() => removeSkill(skill)}
+                          className="ml-2 text-blue-600 hover:text-blue-800"
+                        >
+                          <X className="w-3 h-3" />
+                        </button>
+                      )}
+                    </span>
+                  ))
+                )}
               </div>
             </div>
 
@@ -791,29 +938,29 @@ export default function ProfileClient({ initialUser }: ProfileClientProps) {
                   />
                 </div>
               ) : (
-                <div className="space-y-3">
-                  <div className="flex items-center">
-                    <Mail className="w-5 h-5 text-gray-400 mr-3" />
-                    <span className="text-gray-700">{user.email}</span>
+                <div className="space-y-3 overflow-hidden">
+                  <div className="flex items-start">
+                    <Mail className="w-5 h-5 text-gray-400 mr-3 flex-shrink-0 mt-0.5" />
+                    <span className="text-gray-700 break-all">{user.email}</span>
                   </div>
                   {user.phone && (
                     <div className="flex items-center">
-                      <Phone className="w-5 h-5 text-gray-400 mr-3" />
+                      <Phone className="w-5 h-5 text-gray-400 mr-3 flex-shrink-0" />
                       <span className="text-gray-700">{user.phone}</span>
                     </div>
                   )}
-                  <div className="flex items-center">
-                    <MapPin className="w-5 h-5 text-gray-400 mr-3" />
-                    <span className="text-gray-700">{user.location}</span>
+                  <div className="flex items-start">
+                    <MapPin className="w-5 h-5 text-gray-400 mr-3 flex-shrink-0 mt-0.5" />
+                    <span className="text-gray-700 break-words">{user.location}</span>
                   </div>
                   {user.portfolio && (
-                    <div className="flex items-center">
-                      <Globe className="w-5 h-5 text-gray-400 mr-3" />
+                    <div className="flex items-start">
+                      <Globe className="w-5 h-5 text-gray-400 mr-3 flex-shrink-0 mt-0.5" />
                       <a
                         href={user.portfolio}
                         target="_blank"
                         rel="noopener noreferrer"
-                        className="text-blue-600 hover:text-blue-700"
+                        className="text-blue-600 hover:text-blue-700 break-all"
                       >
                         Portfolio
                       </a>

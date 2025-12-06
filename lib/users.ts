@@ -96,3 +96,93 @@ export const verifyPassword = async (password: string, hashedPassword: string): 
   return bcrypt.compare(password, hashedPassword);
 };
 
+// ============================================
+// USER SKILLS FUNCTIONS
+// ============================================
+
+// Get user skills by email
+export const getUserSkills = async (email: string): Promise<string[]> => {
+  try {
+    const sql = getDb();
+    const result = await sql`
+      SELECT skill
+      FROM user_skills
+      WHERE LOWER(email) = LOWER(${email})
+      ORDER BY created_at ASC
+    `;
+    
+    return result.map((row: any) => row.skill);
+  } catch (error) {
+    console.error('Error getting user skills:', error);
+    return [];
+  }
+};
+
+// Save user skills (replaces existing skills)
+export const saveUserSkills = async (email: string, skills: string[]): Promise<boolean> => {
+  try {
+    const sql = getDb();
+    
+    // Delete existing skills for this user
+    await sql`
+      DELETE FROM user_skills
+      WHERE LOWER(email) = LOWER(${email})
+    `;
+    
+    // Insert new skills (if any)
+    if (skills.length > 0) {
+      // Filter out empty skills and duplicates
+      const uniqueSkills = [...new Set(skills.filter(s => s && s.trim()))];
+      
+      for (const skill of uniqueSkills) {
+        await sql`
+          INSERT INTO user_skills (email, skill)
+          VALUES (${email.toLowerCase()}, ${skill.trim()})
+          ON CONFLICT (email, skill) DO NOTHING
+        `;
+      }
+    }
+    
+    return true;
+  } catch (error) {
+    console.error('Error saving user skills:', error);
+    return false;
+  }
+};
+
+// Add a single skill for user
+export const addUserSkill = async (email: string, skill: string): Promise<boolean> => {
+  try {
+    const sql = getDb();
+    
+    await sql`
+      INSERT INTO user_skills (email, skill)
+      VALUES (${email.toLowerCase()}, ${skill.trim()})
+      ON CONFLICT (email, skill) DO NOTHING
+    `;
+    
+    return true;
+  } catch (error) {
+    console.error('Error adding user skill:', error);
+    return false;
+  }
+};
+
+// Remove a single skill for user
+export const removeUserSkill = async (email: string, skill: string): Promise<boolean> => {
+  try {
+    const sql = getDb();
+    
+    await sql`
+      DELETE FROM user_skills
+      WHERE LOWER(email) = LOWER(${email})
+      AND LOWER(skill) = LOWER(${skill})
+    `;
+    
+    return true;
+  } catch (error) {
+    console.error('Error removing user skill:', error);
+    return false;
+  }
+};
+
