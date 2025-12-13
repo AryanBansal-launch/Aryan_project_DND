@@ -48,7 +48,10 @@ export default function JobDetailClient({ job }: JobDetailClientProps) {
         uid: job.id,
         title: job.title,
         category: job.category,
-        skills: job.skills,
+        // Extract skill names from skill objects if needed
+        skills: Array.isArray(job.skills) 
+          ? job.skills.map((s: any) => typeof s === 'string' ? s : s.skill || s.name || '')
+          : [],
         location: job.location,
         company: job.company.name,
       });

@@ -55,7 +55,7 @@ interface ProfileClientProps {
 export default function ProfileClient({ initialUser }: ProfileClientProps) {
   const [user, setUser] = useState<UserType>(initialUser);
   const [isEditing, setIsEditing] = useState(false);
-  
+
   // Profile loading state
   const [isLoadingProfile, setIsLoadingProfile] = useState(true);
   const [authProvider, setAuthProvider] = useState<string | null>(null);
@@ -205,7 +205,7 @@ export default function ProfileClient({ initialUser }: ProfileClientProps) {
     const skillsSaved = await saveSkillsToDatabase(user.skills);
     
     if (skillsSaved) {
-      setIsEditing(false);
+    setIsEditing(false);
       // Fetch job recommendations based on updated skills
       await fetchJobRecommendations(user.skills);
     }
@@ -344,13 +344,13 @@ export default function ProfileClient({ initialUser }: ProfileClientProps) {
                 ) : (
                   <>
                     <div className="flex items-center gap-2 flex-wrap">
-                      <h1 className="text-2xl font-bold text-gray-900">
+                    <h1 className="text-2xl font-bold text-gray-900">
                         {isLoadingProfile ? (
                           <span className="text-gray-400">Loading...</span>
                         ) : (
                           `${user.firstName} ${user.lastName}`
                         )}
-                      </h1>
+                    </h1>
                       {/* Auth Provider Badge */}
                       {authProvider && (
                         <span className={`text-xs px-2 py-0.5 rounded-full whitespace-nowrap ${
@@ -426,8 +426,8 @@ export default function ProfileClient({ initialUser }: ProfileClientProps) {
                       </>
                     ) : (
                       <>
-                        <Save className="w-4 h-4 mr-2" />
-                        Save
+                    <Save className="w-4 h-4 mr-2" />
+                    Save
                       </>
                     )}
                   </button>
@@ -476,7 +476,7 @@ export default function ProfileClient({ initialUser }: ProfileClientProps) {
             <div className="bg-white rounded-lg shadow-sm border p-6">
               <div className="flex items-center justify-between mb-4">
                 <div className="flex items-center gap-2">
-                  <h2 className="text-lg font-semibold text-gray-900">Skills</h2>
+                <h2 className="text-lg font-semibold text-gray-900">Skills</h2>
                   {isLoadingSkills && (
                     <Loader2 className="w-4 h-4 text-gray-400 animate-spin" />
                   )}
@@ -496,19 +496,19 @@ export default function ProfileClient({ initialUser }: ProfileClientProps) {
                       Find Matching Jobs
                     </button>
                   )}
-                  {isEditing && (
-                    <button
-                      onClick={() => {
-                        const skill = prompt("Enter a new skill:");
-                        if (skill) addSkill(skill);
-                      }}
-                      className="text-blue-600 hover:text-blue-700 text-sm font-medium"
-                    >
-                      <Plus className="w-4 h-4 mr-1 inline" />
-                      Add Skill
-                    </button>
-                  )}
-                </div>
+                {isEditing && (
+                  <button
+                    onClick={() => {
+                      const skill = prompt("Enter a new skill:");
+                      if (skill) addSkill(skill);
+                    }}
+                    className="text-blue-600 hover:text-blue-700 text-sm font-medium"
+                  >
+                    <Plus className="w-4 h-4 mr-1 inline" />
+                    Add Skill
+                  </button>
+                )}
+              </div>
               </div>
               
               {/* Skills error message */}
@@ -527,20 +527,20 @@ export default function ProfileClient({ initialUser }: ProfileClientProps) {
                   </span>
                 ) : (
                   user.skills.map((skill, index) => (
-                    <span
-                      key={index}
-                      className="bg-blue-100 text-blue-800 text-sm px-3 py-1 rounded-full flex items-center"
-                    >
-                      {skill}
-                      {isEditing && (
-                        <button
-                          onClick={() => removeSkill(skill)}
-                          className="ml-2 text-blue-600 hover:text-blue-800"
-                        >
-                          <X className="w-3 h-3" />
-                        </button>
-                      )}
-                    </span>
+                  <span
+                    key={index}
+                    className="bg-blue-100 text-blue-800 text-sm px-3 py-1 rounded-full flex items-center"
+                  >
+                    {skill}
+                    {isEditing && (
+                      <button
+                        onClick={() => removeSkill(skill)}
+                        className="ml-2 text-blue-600 hover:text-blue-800"
+                      >
+                        <X className="w-3 h-3" />
+                      </button>
+                    )}
+                  </span>
                   ))
                 )}
               </div>
@@ -669,8 +669,8 @@ export default function ProfileClient({ initialUser }: ProfileClientProps) {
                         View all jobs
                         <ExternalLink className="w-4 h-4" />
                       </Link>
-                    </div>
-                  </div>
+              </div>
+            </div>
                 )}
               </div>
             )}

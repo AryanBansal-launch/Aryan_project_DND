@@ -217,7 +217,10 @@ export default function HomeClient({ homepage, featuredJobs, topCompanies, allJo
           company: job.company,
           location: job.location,
           salary: job.salary,
-          skills: job.skills,
+          // Extract skill names from skill objects if needed
+          skills: Array.isArray(job.skills) 
+            ? job.skills.map((s: any) => typeof s === 'string' ? s : s.skill || s.name || '')
+            : [],
           postedAt: job.postedAt,
           isRemote: job.isRemote,
         }))} 
