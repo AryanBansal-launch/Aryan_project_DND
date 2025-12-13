@@ -73,14 +73,52 @@ This project leverages multiple Contentstack products and features for a complet
 | **Event Tracking** | Track banner impressions and CTA clicks | `trackPersonalizeEvent()` |
 | **Variant Content** | Fetch personalized content for matched audiences | `getPersonalizedContent()` |
 
-### 4. Webhooks
+### 4. Data & Insights (Lytics) Integration
+
+This project integrates Contentstack's Data & Insights (Lytics) for real-time behavior tracking and personalized experiences.
+
+| Feature | Description | Files |
+|---------|-------------|-------|
+| **Lytics Tracking Tag** | Captures page views and custom events | `app/layout.tsx` |
+| **Behavior Tracking** | Tracks job views, blog reads, applications, interests | `lib/behavior-tracking.ts` |
+| **Session Management** | Tracks returning users and session counts | `components/BehaviorTracker.tsx` |
+| **Interest Profiling** | Builds user interest profiles (categories, skills, locations) | `lib/behavior-tracking.ts` |
+| **Personalized Recommendations** | Shows "Recommended For You" jobs based on behavior | `components/RecommendedForYou.tsx` |
+
+#### Behavior Events Tracked
+
+| Event | Data Captured | Use Case |
+|-------|---------------|----------|
+| `job_view` | Job UID, title, category, skills, location, company | Build job interest profile |
+| `blog_read` | Blog UID, title, category, tags | Understand content preferences |
+| `job_application` | Job UID, title, company | Track conversion |
+| `search` | Query, location, category filters | Understand search intent |
+| `session_start` | Session count, returning user status | Segment new vs returning users |
+
+#### Lytics → Personalize Flow
+
+```
+User Behavior (Job Views, Blog Reads)
+         ↓
+    Lytics Tracking (jstag.send)
+         ↓
+    User Profile Built (localStorage + Lytics)
+         ↓
+    Personalize Attributes Updated
+         ↓
+    Audience Matching (Contentstack Personalize)
+         ↓
+    Personalized Content Delivered
+```
+
+### 5. Webhooks
 
 | Webhook | Trigger | Action |
 |---------|---------|--------|
 | **New Job Notification** | Job entry published | Sends email to all registered users |
 
 
-### 5. Automate
+### 6. Automate
 
 | Automation | Trigger | Action |
 |------------|---------|--------|
@@ -89,7 +127,7 @@ This project leverages multiple Contentstack products and features for a complet
 | **Algolia Index Sync** | Job entry publish event | Updates Algolia search index |
 | **Chatbot Context Feed** | Webhook trigger | Feeds content context to AI chatbot |
 
-### 6. Marketplace Apps
+### 7. Marketplace Apps
 
 | App | Purpose |
 |-----|---------|
@@ -97,7 +135,7 @@ This project leverages multiple Contentstack products and features for a complet
 | **AI Chatbot** | Chatbot fed with content context via Marketplace app and Automate webhook |
 
 
-### 7. Content Types
+### 8. Content Types
 
 | Content Type | Purpose | Fields |
 |--------------|---------|--------|

@@ -16,6 +16,7 @@ import {
 } from "lucide-react";
 import { ContentstackHomepage } from "@/lib/types";
 import { formatSalary, formatRelativeTime } from "@/lib/utils";
+import RecommendedForYou from "@/components/RecommendedForYou";
 
 // Animated Counter Component
 function AnimatedCounter({ value, duration = 2000 }: { value: string; duration?: number }) {
@@ -115,9 +116,10 @@ interface HomeClientProps {
   homepage: ContentstackHomepage;
   featuredJobs: any[];
   topCompanies: any[];
+  allJobs: any[];
 }
 
-export default function HomeClient({ homepage, featuredJobs, topCompanies }: HomeClientProps) {
+export default function HomeClient({ homepage, featuredJobs, topCompanies, allJobs }: HomeClientProps) {
   const router = useRouter();
   const [searchQuery, setSearchQuery] = useState("");
   const [searchLocation, setSearchLocation] = useState("");
@@ -206,6 +208,20 @@ export default function HomeClient({ homepage, featuredJobs, topCompanies }: Hom
           </div>
         </div>
       </section>
+
+      {/* Personalized Recommendations - Powered by Lytics + Personalize */}
+      <RecommendedForYou 
+        allJobs={allJobs.map(job => ({
+          uid: job.id,
+          title: job.title,
+          company: job.company,
+          location: job.location,
+          salary: job.salary,
+          skills: job.skills,
+          postedAt: job.postedAt,
+          isRemote: job.isRemote,
+        }))} 
+      />
 
       {/* Featured Jobs */}
       <section className="py-16 bg-gray-50">

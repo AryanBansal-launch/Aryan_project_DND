@@ -100,11 +100,15 @@ export default async function Home() {
     );
   }
 
+  // Transform all jobs for personalized recommendations
+  const allJobs = (csJobs as ContentstackJob[]).map(transformJob);
+
   return (
     <HomeClient 
       homepage={csHomepage as ContentstackHomepage}
       featuredJobs={featuredJobs}
       topCompanies={topCompanies}
+      allJobs={allJobs}
     />
   );
 }

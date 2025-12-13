@@ -17,6 +17,7 @@ import {
 } from "lucide-react";
 import { formatSalary, formatRelativeTime } from "@/lib/utils";
 import { Job } from "@/lib/types";
+import { trackJobView, trackJobApplication } from "@/lib/behavior-tracking";
 
 interface JobDetailClientProps {
   job: Job;
@@ -37,6 +38,23 @@ export default function JobDetailClient({ job }: JobDetailClientProps) {
   });
 
   const formRef = useRef<HTMLDivElement>(null);
+  const hasTrackedView = useRef(false);
+
+  // Track job view when component mounts (only once)
+  useEffect(() => {
+    if (!hasTrackedView.current) {
+      hasTrackedView.current = true;
+      trackJobView({
+        uid: job.id,
+        title: job.title,
+        category: job.category,
+        skills: job.skills,
+        location: job.location,
+        company: job.company.name,
+      });
+      console.log(`👁️ Tracked view: ${job.title}`);
+    }
+  }, [job]);
 
   // Scroll to form when it opens
   useEffect(() => {
@@ -105,6 +123,14 @@ export default function JobDetailClient({ job }: JobDetailClientProps) {
       const result = await response.json();
 
       if (response.ok) {
+        // Track successful application for personalization
+        trackJobApplication({
+          uid: job.id,
+          title: job.title,
+          company: job.company.name,
+        });
+        console.log(`📝 Tracked application: ${job.title}`);
+        
         alert(`✅ ${result.message}\n\nApplication ID: ${result.applicationId}`);
         setShowApplicationForm(false);
         // Reset form
