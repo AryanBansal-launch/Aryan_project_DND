@@ -7,7 +7,7 @@ import { authOptions } from '@/lib/auth';
 import { getUserSkills, saveUserSkills } from '@/lib/users';
 
 // GET - Retrieve user's skills
-export async function GET(request: NextRequest) {
+export async function GET(_request: NextRequest) {
   try {
     // Get the current session
     const session = await getServerSession(authOptions);

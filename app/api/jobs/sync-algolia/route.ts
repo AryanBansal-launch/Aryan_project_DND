@@ -10,7 +10,7 @@ const appId = process.env.NEXT_PUBLIC_ALGOLIA_APP_ID;
 const adminKey = process.env.ALGOLIA_ADMIN_KEY; // Need admin key for writing
 const indexName = process.env.NEXT_PUBLIC_ALGOLIA_INDEX_NAME || 'job';
 
-export async function POST(request: NextRequest) {
+export async function POST(_request: NextRequest) {
   try {
     // Check for admin key
     if (!appId || !adminKey) {

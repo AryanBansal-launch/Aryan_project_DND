@@ -86,7 +86,7 @@ export async function searchJobsBySkills(
     return null;
   }
 
-  const { skills, limit = 10, filters } = options;
+  const { skills, limit = 10 } = options;
 
   // Join skills with spaces for multi-word search
   // Algolia will use typo tolerance and synonyms for fuzzy matching

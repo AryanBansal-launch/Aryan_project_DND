@@ -19,8 +19,7 @@ import {
   Sparkles,
   Loader2,
   ExternalLink,
-  DollarSign,
-  Building
+  DollarSign
 } from "lucide-react";
 import { User as UserType, WorkExperience, Education } from "@/lib/types";
 import { formatDate, getInitials } from "@/lib/utils";
