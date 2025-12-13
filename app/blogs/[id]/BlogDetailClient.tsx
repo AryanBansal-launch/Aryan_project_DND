@@ -35,7 +35,6 @@ export default function BlogDetailClient({ blog, currentLocale }: BlogDetailClie
         uid: blog.id,
         title: blog.title,
         category: blog.category,
-        tags: blog.tags,
       });
       console.log(`📖 Tracked blog read: ${blog.title}`);
     }

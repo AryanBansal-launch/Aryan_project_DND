@@ -22,10 +22,7 @@ import {
 } from "lucide-react";
 import { 
   getUserBehavior, 
-  getTopCategories, 
   getTopSkills, 
-  getEngagementLevel,
-  isReturningUser,
   getPersonalizationSummary
 } from "@/lib/behavior-tracking";
 import { formatSalary, formatRelativeTime } from "@/lib/utils";
@@ -69,7 +66,6 @@ export default function RecommendedForYou({ allJobs }: RecommendedForYouProps) {
       setShowSection(true);
 
       const topSkills = getTopSkills(5);
-      const topCategories = getTopCategories(3);
       const viewedJobIds = behavior.viewedJobs;
 
       // Score jobs based on user interests
@@ -77,7 +73,7 @@ export default function RecommendedForYou({ allJobs }: RecommendedForYouProps) {
         .filter(job => !viewedJobIds.includes(job.uid)) // Exclude already viewed
         .map(job => {
           let score = 0;
-          let reasons: string[] = [];
+          const reasons: string[] = [];
 
           // Score based on skill match
           const jobSkills = job.skills.map(s => s.toLowerCase());
