@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect, useRef } from "react";
 import Link from "next/link";
 import Image from "next/image";
 import { 
@@ -16,6 +16,7 @@ import {
 } from "lucide-react";
 import { Blog } from "@/lib/types";
 import LanguageSwitcher from "@/components/LanguageSwitcher";
+import { trackBlogRead } from "@/lib/behavior-tracking";
 
 interface BlogDetailClientProps {
   blog: Blog;
@@ -24,6 +25,21 @@ interface BlogDetailClientProps {
 
 export default function BlogDetailClient({ blog, currentLocale }: BlogDetailClientProps) {
   const [copied, setCopied] = useState(false);
+  const hasTrackedView = useRef(false);
+
+  // Track blog read when component mounts (only once)
+  useEffect(() => {
+    if (!hasTrackedView.current) {
+      hasTrackedView.current = true;
+      trackBlogRead({
+        uid: blog.id,
+        title: blog.title,
+        category: blog.category,
+        tags: blog.tags,
+      });
+      console.log(`📖 Tracked blog read: ${blog.title}`);
+    }
+  }, [blog]);
 
   const handleShare = async (platform?: string) => {
     const url = window.location.href;

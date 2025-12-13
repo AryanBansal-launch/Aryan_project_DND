@@ -1,8 +1,10 @@
 import type { Metadata } from "next"; // Importing the Metadata type from Next.js
+import Script from "next/script"; // Importing Script component for external scripts
 import "./globals.css"; // Importing global CSS styles
 import Navigation from "@/components/Navigation"; // Importing the Navigation component
 import { SessionProvider } from "@/components/SessionProvider"; // Importing the SessionProvider component
 import PersonalizedBanner from "@/components/PersonalizedBanner"; // Importing the PersonalizedBanner component
+import BehaviorTracker from "@/components/BehaviorTracker"; // Importing BehaviorTracker for personalization
 import { getNavigation, getPersonalizedBanner } from "@/lib/contentstack"; // Import CMS functions
 import { ContentstackNavigation } from "@/lib/types"; // Import type
 
@@ -38,8 +40,8 @@ export default async function RootLayout({
     <html lang="en">
       {/* Setting the language attribute for the HTML document */}
       <body className="min-h-screen bg-gray-50">
-        {/* Start Lytics Tracking Tag Version 3 */}
-        {/* <Script
+        {/* Lytics Tracking Tag Version 3 - Enabled for behavior tracking */}
+        <Script
           id="lytics-tracking"
           strategy="afterInteractive"
           dangerouslySetInnerHTML={{
@@ -49,11 +51,14 @@ export default async function RootLayout({
               jstag.init({
                 src: 'https://c.lytics.io/api/tag/acc87699b8b647fbefb4e86ae8e9d84a/latest.min.js'
               });
-              // You may need to send a page view, depending on your use-case
+              // Track page view on load
               jstag.pageView();
+              console.log('📊 Lytics: Tracking initialized');
             `,
           }}
-        /> */}
+        />
+        {/* Behavior Tracker for personalization */}
+        <BehaviorTracker />
         <SessionProvider>
           <Navigation navigationData={navigationData as ContentstackNavigation | null} />
           <main className="min-h-screen">

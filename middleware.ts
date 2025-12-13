@@ -1,22 +1,10 @@
 import { NextResponse } from 'next/server';
 import type { NextRequest } from 'next/server';
 
-/**
- * Edge Function Middleware for Admin Page Protection
- * 
- * This middleware runs at the edge (on Contentstack Launch) and protects
- * the /admin route with Basic HTTP Authentication.
- * 
- * Users will see a browser-native username/password prompt when accessing /admin.
- */
-
-// Admin credentials - In production, use environment variables
 const ADMIN_USERNAME = process.env.ADMIN_USERNAME || 'admin';
 const ADMIN_PASSWORD = process.env.ADMIN_PASSWORD || 'admin123';
 
-/**
- * Validates Basic Auth credentials from the Authorization header
- */
+
 function isValidCredentials(authHeader: string | null): boolean {
   if (!authHeader || !authHeader.startsWith('Basic ')) {
     return false;
@@ -36,10 +24,7 @@ function isValidCredentials(authHeader: string | null): boolean {
   }
 }
 
-/**
- * Returns a 401 Unauthorized response with WWW-Authenticate header
- * This triggers the browser's built-in login prompt
- */
+
 function unauthorizedResponse(): NextResponse {
   return new NextResponse('Authentication required to access admin panel', {
     status: 401,
