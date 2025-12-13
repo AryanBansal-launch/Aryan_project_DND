@@ -94,7 +94,7 @@ export default function PersonalizedBanner({
   // Get banner config based on selection
   const bannerConfig = BANNER_CONFIGS[selectedBanner];
   const IconComponent = bannerConfig.icon;
-  
+
   // Use Contentstack data if available, otherwise use behavior-based config
   const finalBannerTitle = contentstackData?.banner_title || title || bannerConfig.banner_title;
   const finalBannerMessage = contentstackData?.banner_message || message || bannerConfig.banner_message;
@@ -147,7 +147,7 @@ export default function PersonalizedBanner({
         return false;
       }
 
-      try {
+        try {
         console.group('🔄 PersonalizedBanner: Trying Contentstack Personalize SDK');
         
         // Initialize SDK
@@ -163,7 +163,7 @@ export default function PersonalizedBanner({
         const engagementLevel = behavior.totalJobViews > 20 ? 'high' : 
                                behavior.totalJobViews > 5 ? 'medium' : 'low';
         
-        await setPersonalizeAttributes({
+          await setPersonalizeAttributes({
           total_job_views: behavior.totalJobViews,
           total_blog_reads: behavior.totalBlogReads,
           engagement_level: engagementLevel,
@@ -173,14 +173,14 @@ export default function PersonalizedBanner({
           has_applied: behavior.appliedJobs.length > 0,
           ready_to_apply: behavior.totalJobViews >= 3 && behavior.appliedJobs.length === 0,
           first_time_user: behavior.sessionCount === 1,
-        });
-
+          });
+          
         // Wait for SDK to process
         await new Promise(resolve => setTimeout(resolve, 300));
-
+              
         // Try to get personalized content
         const content = await getPersonalizedContent('personalized_banner');
-        
+              
         if (content && content.banner_title) {
           console.log('✅ Got personalized content from Contentstack:', content.banner_title);
           console.groupEnd();
@@ -220,7 +220,7 @@ export default function PersonalizedBanner({
         sessionCount: behavior.sessionCount,
         topCategory: behavior.interestedCategories[0],
         hasApplied: behavior.appliedJobs.length > 0,
-      });
+                });
 
       // Priority-based selection (highest priority first)
       
@@ -309,7 +309,7 @@ export default function PersonalizedBanner({
     setShowBanner(false);
     const storageKey = persistDismissal ? "banner_dismissed_permanent" : "banner_dismissed_session";
     localStorage.setItem(storageKey, "true");
-    localStorage.setItem("banner_dismissed_time", Date.now().toString());
+      localStorage.setItem("banner_dismissed_time", Date.now().toString());
   };
 
   const handleCTAClick = () => {
@@ -340,8 +340,8 @@ export default function PersonalizedBanner({
               <div className="flex-1 min-w-0">
                 <div className="flex items-center gap-2 mb-1">
                   <h3 className="text-base sm:text-lg font-semibold">
-                    {finalBannerTitle}
-                  </h3>
+                  {finalBannerTitle}
+                </h3>
                   <span className="text-xs bg-white/20 px-2 py-0.5 rounded-full">
                     Personalized
                   </span>
