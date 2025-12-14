@@ -1,0 +1,194 @@
+{
+  "content_type": {
+    "title": "Learning Resource",
+    "uid": "learning_resource",
+    "schema": [
+      {
+        "display_name": "Title",
+        "uid": "title",
+        "data_type": "text",
+        "mandatory": true,
+        "unique": true,
+        "field_metadata": {
+          "description": "Title of the learning resource"
+        }
+      },
+      {
+        "display_name": "Slug",
+        "uid": "slug",
+        "data_type": "text",
+        "mandatory": true,
+        "unique": true,
+        "field_metadata": {
+          "description": "URL-friendly identifier"
+        }
+      },
+      {
+        "display_name": "Description",
+        "uid": "description",
+        "data_type": "text",
+        "mandatory": true,
+        "field_metadata": {
+          "description": "Brief description of the learning resource (AI-generated with Brand Kit)",
+          "multiline": true
+        }
+      },
+      {
+        "display_name": "Technology",
+        "uid": "technology",
+        "data_type": "text",
+        "mandatory": true,
+        "enum": {
+          "advanced": true,
+          "choices": [
+            { "value": "nextjs", "key": "Next.js" },
+            { "value": "react", "key": "React" },
+            { "value": "nodejs", "key": "Node.js" },
+            { "value": "typescript", "key": "TypeScript" },
+            { "value": "microservices", "key": "Microservices" },
+            { "value": "docker", "key": "Docker" },
+            { "value": "kubernetes", "key": "Kubernetes" },
+            { "value": "aws", "key": "AWS" },
+            { "value": "python", "key": "Python" },
+            { "value": "golang", "key": "Go" },
+            { "value": "devops", "key": "DevOps" },
+            { "value": "ai_ml", "key": "AI/ML" },
+            { "value": "database", "key": "Database" },
+            { "value": "security", "key": "Security" },
+            { "value": "other", "key": "Other" }
+          ]
+        },
+        "field_metadata": {
+          "description": "Technology category"
+        }
+      },
+      {
+        "display_name": "Difficulty Level",
+        "uid": "difficulty_level",
+        "data_type": "text",
+        "mandatory": true,
+        "enum": {
+          "advanced": true,
+          "choices": [
+            { "value": "beginner", "key": "Beginner" },
+            { "value": "intermediate", "key": "Intermediate" },
+            { "value": "advanced", "key": "Advanced" }
+          ]
+        },
+        "field_metadata": {
+          "description": "Difficulty level of the content"
+        }
+      },
+      {
+        "display_name": "YouTube Video URL",
+        "uid": "youtube_url",
+        "data_type": "text",
+        "mandatory": true,
+        "field_metadata": {
+          "description": "Full YouTube video URL"
+        }
+      },
+      {
+        "display_name": "YouTube Video ID",
+        "uid": "youtube_video_id",
+        "data_type": "text",
+        "mandatory": true,
+        "field_metadata": {
+          "description": "YouTube video ID (e.g., dQw4w9WgXcQ)"
+        }
+      },
+      {
+        "display_name": "Duration",
+        "uid": "duration",
+        "data_type": "text",
+        "mandatory": false,
+        "field_metadata": {
+          "description": "Video duration (e.g., 15:30)"
+        }
+      },
+      {
+        "display_name": "Thumbnail",
+        "uid": "thumbnail",
+        "data_type": "file",
+        "mandatory": false,
+        "field_metadata": {
+          "description": "Custom thumbnail (or use YouTube thumbnail)"
+        }
+      },
+      {
+        "display_name": "Key Takeaways",
+        "uid": "key_takeaways",
+        "data_type": "text",
+        "mandatory": false,
+        "multiple": true,
+        "field_metadata": {
+          "description": "List of key learning points (AI-generated with Brand Kit)"
+        }
+      },
+      {
+        "display_name": "Skills Covered",
+        "uid": "skills_covered",
+        "data_type": "text",
+        "mandatory": false,
+        "multiple": true,
+        "field_metadata": {
+          "description": "Skills learned from this resource"
+        }
+      },
+      {
+        "display_name": "Related Jobs",
+        "uid": "related_jobs",
+        "data_type": "reference",
+        "mandatory": false,
+        "multiple": true,
+        "reference_to": ["job"],
+        "field_metadata": {
+          "description": "Jobs that require these skills"
+        }
+      },
+      {
+        "display_name": "Author/Instructor",
+        "uid": "instructor",
+        "data_type": "text",
+        "mandatory": false,
+        "field_metadata": {
+          "description": "Name of the instructor or channel"
+        }
+      },
+      {
+        "display_name": "Published Date",
+        "uid": "published_date",
+        "data_type": "isodate",
+        "mandatory": false,
+        "field_metadata": {
+          "description": "When the resource was published"
+        }
+      },
+      {
+        "display_name": "Featured",
+        "uid": "featured",
+        "data_type": "boolean",
+        "mandatory": false,
+        "field_metadata": {
+          "description": "Show in featured section"
+        }
+      },
+      {
+        "display_name": "Order",
+        "uid": "order",
+        "data_type": "number",
+        "mandatory": false,
+        "field_metadata": {
+          "description": "Display order (lower = first)"
+        }
+      }
+    ],
+    "options": {
+      "is_page": false,
+      "singleton": false,
+      "title": "title",
+      "url_pattern": "/learnings/:slug"
+    }
+  }
+}
+

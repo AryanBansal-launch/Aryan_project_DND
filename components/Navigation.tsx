@@ -18,7 +18,8 @@ import {
   FileText,
   LogOut,
   Settings,
-  BookOpen
+  BookOpen,
+  GraduationCap
 } from "lucide-react";
 import { cn, getInitials } from "@/lib/utils";
 import { ContentstackNavigation } from "@/lib/types";
@@ -38,7 +39,8 @@ const iconMap: { [key: string]: any } = {
   UserPlus,
   LogOut,
   Settings,
-  BookOpen
+  BookOpen,
+  GraduationCap
 };
 
 interface NavigationProps {
@@ -54,14 +56,34 @@ export default function Navigation({ navigationData }: NavigationProps) {
   // Use CMS data if available, otherwise fallback to hardcoded
   const brandName = navigationData?.brand_name || "JobDekho";
   
-  const allNavItems = navigationData?.nav_items || [
+  // Default nav items
+  const defaultNavItems = [
     { label: "Home", link: "/", icon: "Search" },
     { label: "Jobs", link: "/jobs", icon: "Briefcase" },
     { label: "Companies", link: "/companies", icon: "Building2" },
+    { label: "Learnings", link: "/learnings", icon: "GraduationCap" },
     { label: "Blogs", link: "/blogs", icon: "BookOpen" },
     { label: "Applications", link: "/applications", icon: "FileText", requireAuth: true },
     { label: "Profile", link: "/profile", icon: "User", requireAuth: true },
   ];
+
+  // Use CMS nav items if available, but ensure Learnings is always included
+  let allNavItems = navigationData?.nav_items || defaultNavItems;
+  
+  // If using CMS data, ensure Learnings is in the list (insert after Companies)
+  if (navigationData?.nav_items && !allNavItems.some(item => item.link === '/learnings')) {
+    const companiesIndex = allNavItems.findIndex(item => item.link === '/companies');
+    const learningsItem = { label: "Learnings", link: "/learnings", icon: "GraduationCap" };
+    if (companiesIndex !== -1) {
+      allNavItems = [
+        ...allNavItems.slice(0, companiesIndex + 1),
+        learningsItem,
+        ...allNavItems.slice(companiesIndex + 1)
+      ];
+    } else {
+      allNavItems = [...allNavItems, learningsItem];
+    }
+  }
 
   // Filter nav items based on authentication
   const navItems = allNavItems.filter(item => {

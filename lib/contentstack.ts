@@ -553,3 +553,138 @@ export async function getPersonalizedBanner(
 
   return null;
 }
+
+// ============================================
+// LEARNING RESOURCES
+// ============================================
+
+// Interface for Learning Resource
+export interface ContentstackLearningResource {
+  uid: string;
+  title: string;
+  slug: string;
+  description: string;
+  technology: string;
+  difficulty_level: 'beginner' | 'intermediate' | 'advanced';
+  youtube_url: string;
+  youtube_video_id: string;
+  duration?: string;
+  thumbnail?: {
+    url: string;
+    title?: string;
+  };
+  key_takeaways?: string[];
+  skills_covered?: string[];
+  related_jobs?: any[];
+  instructor?: string;
+  published_date?: string;
+  featured?: boolean;
+  order?: number;
+  $?: any;
+}
+
+/**
+ * Fetch all learning resources
+ */
+export async function getLearningResources(options?: {
+  technology?: string;
+  difficulty?: string;
+  featured?: boolean;
+  limit?: number;
+}) {
+  try {
+    let query = stack
+      .contentType("learning_resource")
+      .entry()
+      .query();
+
+    // Apply filters
+    if (options?.technology) {
+      query = query.where("technology", QueryOperation.EQUALS, options.technology);
+    }
+    
+    if (options?.difficulty) {
+      query = query.where("difficulty_level", QueryOperation.EQUALS, options.difficulty);
+    }
+    
+    if (options?.featured) {
+      query = query.where("featured", QueryOperation.EQUALS, true);
+    }
+
+    const result = await query.find();
+
+    if (result.entries) {
+      let entries = result.entries as ContentstackLearningResource[];
+      
+      // Sort by order, then by title
+      entries.sort((a, b) => {
+        const orderA = a.order || 999;
+        const orderB = b.order || 999;
+        if (orderA !== orderB) return orderA - orderB;
+        return a.title.localeCompare(b.title);
+      });
+
+      // Apply limit
+      if (options?.limit) {
+        entries = entries.slice(0, options.limit);
+      }
+
+      if (process.env.NEXT_PUBLIC_CONTENTSTACK_PREVIEW === 'true') {
+        entries.forEach((entry: any) => {
+          contentstack.Utils.addEditableTags(entry, 'learning_resource', true);
+        });
+      }
+
+      return entries;
+    }
+
+    return [];
+  } catch (error) {
+    // Content type may not exist yet - return empty array
+    console.warn('Learning resources not available:', error);
+    return [];
+  }
+}
+
+/**
+ * Fetch a single learning resource by slug
+ */
+export async function getLearningResourceBySlug(slug: string) {
+  try {
+    const result = await stack
+      .contentType("learning_resource")
+      .entry()
+      .query()
+      .where("slug", QueryOperation.EQUALS, slug)
+      .find();
+
+    if (result.entries && result.entries.length > 0) {
+      const entry = result.entries[0] as ContentstackLearningResource;
+      
+      if (process.env.NEXT_PUBLIC_CONTENTSTACK_PREVIEW === 'true') {
+        contentstack.Utils.addEditableTags(entry as any, 'learning_resource', true);
+      }
+
+      return entry;
+    }
+
+    return null;
+  } catch (error) {
+    console.warn('Learning resource not found:', error);
+    return null;
+  }
+}
+
+/**
+ * Get all unique technologies from learning resources
+ */
+export async function getLearningTechnologies() {
+  try {
+    const resources = await getLearningResources();
+    const technologies = [...new Set(resources.map(r => r.technology))];
+    return technologies.sort();
+  } catch (error) {
+    console.warn('Could not fetch technologies:', error);
+    return [];
+  }
+}
