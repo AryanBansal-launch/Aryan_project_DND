@@ -16,7 +16,6 @@ import {
   Shield,
   Cpu,
   Layers,
-  ExternalLink,
   ChevronRight
 } from "lucide-react";
 import { ContentstackLearningResource } from "@/lib/contentstack";
@@ -97,11 +96,6 @@ export default function LearningsClient({
     return matchesSearch && matchesTech && matchesDifficulty;
   });
 
-  // Get YouTube thumbnail
-  const getYouTubeThumbnail = (videoId: string) => {
-    return `https://img.youtube.com/vi/${videoId}/maxresdefault.jpg`;
-  };
-
   return (
     <div className="min-h-screen bg-gray-50">
       {/* Hero Section */}
@@ -114,18 +108,18 @@ export default function LearningsClient({
             </div>
             <p className="text-xl text-white/90 max-w-2xl mx-auto mb-8">
               Enhance your skills with curated tutorials on in-demand technologies. 
-              From Next.js to Microservices, we've got you covered.
+              From Next.js to Microservices, we&apos;ve got you covered.
             </p>
             
             {/* Search Bar */}
             <div className="max-w-xl mx-auto relative">
-              <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />
+              <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400 z-10" />
               <input
                 type="text"
                 placeholder="Search tutorials, skills, or technologies..."
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
-                className="w-full pl-12 pr-4 py-4 rounded-xl text-gray-900 placeholder-gray-500 focus:outline-none focus:ring-4 focus:ring-white/30"
+                className="w-full pl-12 pr-4 py-4 rounded-xl bg-white text-gray-900 placeholder-gray-400 border-0 shadow-lg focus:outline-none focus:ring-4 focus:ring-white/30"
               />
             </div>
           </div>
@@ -301,8 +295,6 @@ export default function LearningsClient({
 
 // Featured Card Component
 function FeaturedCard({ resource }: { resource: ContentstackLearningResource }) {
-  const TechIcon = TECH_ICONS[resource.technology] || BookOpen;
-  
   return (
     <Link
       href={`/learnings/${resource.slug}`}
@@ -359,8 +351,6 @@ function FeaturedCard({ resource }: { resource: ContentstackLearningResource }) 
 
 // Regular Resource Card Component
 function ResourceCard({ resource }: { resource: ContentstackLearningResource }) {
-  const TechIcon = TECH_ICONS[resource.technology] || BookOpen;
-  
   return (
     <Link
       href={`/learnings/${resource.slug}`}

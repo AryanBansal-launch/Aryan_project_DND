@@ -24,6 +24,7 @@ import {
 import { User as UserType, WorkExperience, Education } from "@/lib/types";
 import { formatDate, getInitials } from "@/lib/utils";
 import Link from "next/link";
+import SkillGapRecommendations from "@/components/SkillGapRecommendations";
 
 // Type for recommended jobs from Algolia
 interface RecommendedJob {
@@ -673,6 +674,11 @@ export default function ProfileClient({ initialUser }: ProfileClientProps) {
             </div>
                 )}
               </div>
+            )}
+
+            {/* Skill Gap Analysis & Learning Recommendations */}
+            {!isEditing && user.skills.length > 0 && (
+              <SkillGapRecommendations userSkills={user.skills} />
             )}
 
             {/* Work Experience */}

@@ -1,7 +1,7 @@
 # Product Requirements Document (PRD)
 # JobPortal - AI-Powered Job Discovery Platform
 
-**Version:** 1.0  
+**Version:** 1.1  
 **Last Updated:** December 14, 2025  
 **Author:** Aryan Bansal  
 **Status:** Production Ready
@@ -37,6 +37,8 @@
 |---------|------------|-------|
 | **Intelligent Search** | Algolia | Fuzzy matching, typo tolerance, instant results |
 | **Behavior-Based Personalization** | Lytics + Personalize | Real-time content adaptation based on user behavior |
+| **Skill Gap Analysis** | Algolia + Contentstack | Identify missing skills and recommend learning resources |
+| **Learning Hub** | Contentstack + YouTube | Curated video tutorials with Brand Kit AI content |
 | **Automated Notifications** | Contentstack Automate | Instant email alerts for new jobs and applications |
 | **Headless Architecture** | Contentstack CMS | Omnichannel content delivery, live preview |
 | **Edge-First Security** | Next.js Middleware | Fast authentication at the edge |
@@ -171,6 +173,29 @@
 | **In-App Notifications** | Real-time notification dropdown | Contentstack Management API |
 | **Application Updates** | Email on application status changes | Contentstack Automate |
 
+### 5.7 Learning Hub
+
+| Feature | Description | Technology |
+|---------|-------------|------------|
+| **Video Tutorials** | Curated YouTube learning resources | Contentstack + YouTube |
+| **Technology Filtering** | Filter by React, Node.js, Python, etc. | Contentstack queries |
+| **Difficulty Levels** | Beginner, Intermediate, Advanced | Content type field |
+| **Skills Covered** | Tags showing skills taught | Modular block field |
+| **Bookmarking** | Save resources for later | localStorage |
+| **Related Resources** | Smart recommendations | Same technology filter |
+
+### 5.8 Skill Gap Analysis & Learning Recommendations
+
+| Feature | Description | Technology |
+|---------|-------------|------------|
+| **Job Market Analysis** | Analyze all jobs to identify in-demand skills | Algolia + skill-gap-analyzer.ts |
+| **User Skill Comparison** | Compare user skills with market demand | NeonDB + Algolia |
+| **Match Percentage** | Calculate how well user matches job market | Algorithm |
+| **Gap Identification** | Identify skills user lacks but are in high demand | Analysis engine |
+| **Learning Recommendations** | Suggest relevant learning resources for each gap | Contentstack learning_resource |
+| **Personalized Banner** | Site-wide banner showing skill gap insights | SkillGapBanner.tsx |
+| **Priority Ranking** | Rank skill gaps by job count (impact) | Sorting algorithm |
+
 ---
 
 ## 6. Technical Architecture
@@ -199,18 +224,23 @@
 │  ├── HomeClient.tsx        → Homepage interactivity             │
 │  ├── jobs/[id]/page.tsx    → Job detail (Server + Client)       │
 │  ├── profile/page.tsx      → User profile management            │
+│  ├── learnings/page.tsx    → Learning Hub listing               │
+│  ├── learnings/[slug]/     → Learning resource detail           │
 │  └── admin/page.tsx        → Protected admin dashboard          │
 │                                                                  │
 │  /components                                                     │
 │  ├── Navigation.tsx        → Site navigation                    │
 │  ├── PersonalizedBanner.tsx → Behavior-based banners            │
 │  ├── RecommendedForYou.tsx → Personalized recommendations       │
-│  └── BehaviorTracker.tsx   → Lytics + Personalize init          │
+│  ├── BehaviorTracker.tsx   → Lytics + Personalize init          │
+│  ├── SkillGapBanner.tsx    → Skill gap awareness banner         │
+│  └── SkillGapRecommendations.tsx → Profile skill gap analysis   │
 │                                                                  │
 │  /lib                                                            │
 │  ├── contentstack.ts       → CMS integration                    │
 │  ├── algolia.ts            → Search integration                 │
 │  ├── behavior-tracking.ts  → User behavior utilities            │
+│  ├── skill-gap-analyzer.ts → Skill gap analysis engine          │
 │  └── users.ts              → Database operations                │
 │                                                                  │
 └─────────────────────────────────────────────────────────────────┘
@@ -229,6 +259,7 @@
 │  ├── /api/user/profile     → GET user profile                   │
 │  ├── /api/jobs/recommendations → POST skill-based search        │
 │  ├── /api/jobs/sync-algolia → POST sync jobs to Algolia         │
+│  ├── /api/skill-gap        → POST analyze skill gaps            │
 │  ├── /api/applications/submit → POST job application            │
 │  ├── /api/webhooks/new-job → POST Contentstack webhook          │
 │  └── /api/notifications    → GET/POST/DELETE notifications      │
@@ -309,6 +340,7 @@ CREATE TABLE applications (
 | **navigation** | nav_items | Site navigation |
 | **notification** | user_email, type, title, message, read, metadata | User notifications |
 | **personalized_banner** | banner_title, banner_message, cta_text, cta_link, user_segment, enabled | Personalized banners |
+| **learning_resource** | title, slug, description, technology, difficulty_level, youtube_url, youtube_video_id, duration, thumbnail, key_takeaways, skills_covered, instructor, published_date, featured, order | Learning video tutorials |
 
 ### 7.3 Personalize Configuration
 
@@ -446,6 +478,39 @@ jstag.send('job_view', {
 └──────────────┘    └──────────────┘    └──────────────┘
 ```
 
+### 9.5 Skill Gap Analysis Flow
+
+```
+┌──────────────┐    ┌──────────────┐    ┌──────────────┐
+│  User Skills │───▶│  /api/       │───▶│  Algolia:    │
+│  (NeonDB)    │    │  skill-gap   │    │  All Jobs    │
+└──────────────┘    └──────────────┘    └──────────────┘
+                                               │
+                                               ▼
+                                        ┌──────────────┐
+                                        │  Analyze     │
+                                        │  Skill Demand│
+                                        └──────┬───────┘
+                                               │
+                    ┌──────────────────────────┼──────────────────────────┐
+                    │                          │                          │
+                    ▼                          ▼                          ▼
+             ┌──────────────┐    ┌──────────────┐    ┌──────────────┐
+             │  Compare w/  │    │  Calculate   │    │  Fetch       │
+             │  User Skills │    │  Match %     │    │  Learnings   │
+             └──────────────┘    └──────────────┘    └──────────────┘
+                    │                          │                          │
+                    └──────────────────────────┼──────────────────────────┘
+                                               │
+                                               ▼
+             ┌──────────────────────────────────────────────────────┐
+             │                SKILL GAP RECOMMENDATIONS              │
+             │  • Missing skills ranked by job count (demand)       │
+             │  • Relevant learning resources for each skill        │
+             │  • Match percentage (how well user fits job market)  │
+             └──────────────────────────────────────────────────────┘
+```
+
 ---
 
 ## 10. User Journeys
@@ -489,6 +554,60 @@ jstag.send('job_view', {
    
 4. Searches for new jobs
    └── Algolia returns skill-matched results
+```
+
+### 10.3 Skill Gap Learning Journey
+
+```
+1. User views profile page
+   └── SkillGapRecommendations component loads
+   └── API fetches all jobs from Algolia
+   
+2. Skill gap analysis runs
+   └── Extracts skills from all jobs
+   └── Compares with user's saved skills
+   └── Calculates match percentage
+   
+3. Results displayed
+   └── "Your Job Market Match: 35%"
+   └── High-priority gaps identified
+   └── "Learn Python to unlock 85 more jobs"
+   
+4. User clicks "Browse Learnings"
+   └── Redirected to Learning Hub
+   └── Pre-filtered by recommended skill
+   
+5. User watches tutorial
+   └── trackLearningView() called
+   └── Behavior profile updated
+   
+6. User adds new skill to profile
+   └── Match percentage increases
+   └── New job recommendations appear
+```
+
+### 10.4 Learning Hub Discovery Journey
+
+```
+1. User navigates to Learning Hub
+   └── /learnings page loads
+   └── All learning resources fetched from Contentstack
+   
+2. Filters by technology
+   └── "React" selected
+   └── Resources filtered client-side
+   
+3. Selects a tutorial
+   └── Detail page with YouTube embed
+   └── trackLearningView() tracks engagement
+   
+4. Views related resources
+   └── Same technology suggestions
+   └── Different difficulty levels
+   
+5. Bookmarks for later
+   └── Saved to localStorage
+   └── Quick access on return
 ```
 
 ---
@@ -561,6 +680,62 @@ Body (from Contentstack):
       "title": "Software Engineer",
       "location": "San Francisco",
       ...
+    }
+  }
+}
+```
+
+### 11.4 Skill Gap Analysis API
+
+**POST /api/skill-gap**
+```json
+Request:
+{
+  "userSkills": ["React", "JavaScript", "CSS"]
+}
+
+Response 200:
+{
+  "success": true,
+  "data": {
+    "totalJobsAnalyzed": 150,
+    "userSkillCount": 3,
+    "matchingJobsCount": 45,
+    "matchPercentage": 30,
+    "topMarketSkills": [
+      { "skill": "python", "jobCount": 85, "percentage": 57 },
+      { "skill": "typescript", "jobCount": 72, "percentage": 48 },
+      { "skill": "react", "jobCount": 65, "percentage": 43 }
+    ],
+    "skillGaps": [
+      {
+        "skill": "python",
+        "jobCount": 85,
+        "percentage": 57,
+        "priority": "high",
+        "learningResources": [
+          {
+            "title": "Python for Beginners",
+            "slug": "python-beginners",
+            "technology": "Python",
+            "difficulty_level": "Beginner",
+            "youtube_video_id": "abc123"
+          }
+        ]
+      },
+      {
+        "skill": "typescript",
+        "jobCount": 72,
+        "percentage": 48,
+        "priority": "high",
+        "learningResources": [...]
+      }
+    ],
+    "userMatchedSkills": ["react", "javascript", "css"],
+    "recommendations": {
+      "message": "You're on the right track!",
+      "suggestedNextSkill": "python",
+      "potentialJobIncrease": 85
     }
   }
 }
@@ -743,6 +918,7 @@ CONTENTSTACK_NEW_JOB_EMAIL_WEBHOOK=
 | Version | Date | Changes |
 |---------|------|---------|
 | 1.0 | Dec 14, 2025 | Initial PRD |
+| 1.1 | Dec 14, 2025 | Added Learning Hub & Skill Gap Analysis features |
 
 ---
 
