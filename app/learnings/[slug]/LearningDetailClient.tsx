@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import Link from "next/link";
 import { 
   ArrowLeft, 
@@ -16,6 +16,7 @@ import {
   Briefcase
 } from "lucide-react";
 import { ContentstackLearningResource } from "@/lib/contentstack";
+import { trackLearningView } from "@/lib/behavior-tracking";
 
 // Difficulty colors
 const DIFFICULTY_COLORS: Record<string, string> = {
@@ -51,6 +52,16 @@ interface LearningDetailClientProps {
 export default function LearningDetailClient({ resource, relatedResources }: LearningDetailClientProps) {
   const [isBookmarked, setIsBookmarked] = useState(false);
   const [showShareMenu, setShowShareMenu] = useState(false);
+
+  // Track learning view on mount
+  useEffect(() => {
+    trackLearningView({
+      uid: resource.uid,
+      title: resource.title,
+      technology: resource.technology,
+      skills: resource.skills_covered,
+    });
+  }, [resource.uid, resource.title, resource.technology, resource.skills_covered]);
 
   const handleShare = async () => {
     if (navigator.share) {
@@ -191,7 +202,7 @@ export default function LearningDetailClient({ resource, relatedResources }: Lea
               <div className="bg-white rounded-xl p-6 shadow-sm">
                 <h2 className="text-xl font-bold text-gray-900 mb-4 flex items-center gap-2">
                   <CheckCircle className="w-5 h-5 text-green-500" />
-                  What You'll Learn
+                  What You&apos;ll Learn
                 </h2>
                 <ul className="space-y-3">
                   {resource.key_takeaways.map((takeaway, idx) => (
@@ -229,7 +240,7 @@ export default function LearningDetailClient({ resource, relatedResources }: Lea
               <Briefcase className="w-10 h-10 mb-4" />
               <h3 className="font-bold text-lg mb-2">Apply These Skills</h3>
               <p className="text-white/90 text-sm mb-4">
-                Find jobs that match the skills you're learning.
+                Find jobs that match the skills you&apos;re learning.
               </p>
               <Link
                 href={`/jobs?skills=${resource.skills_covered?.slice(0, 3).join(',') || resource.technology}`}

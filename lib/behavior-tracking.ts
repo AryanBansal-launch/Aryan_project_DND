@@ -131,10 +131,10 @@ function sendToLytics(eventName: string, eventData: Record<string, any>): void {
 }
 
 /**
- * Update Contentstack Personalize attributes
+ * Sync behavior data to Contentstack Personalize attributes
  * Called after behavior events to keep Personalize in sync
  */
-async function updatePersonalizeAttributes(behavior: UserBehavior): Promise<void> {
+async function syncBehaviorToPersonalize(behavior: UserBehavior): Promise<void> {
   if (typeof window === 'undefined') return;
   
   try {
@@ -288,7 +288,7 @@ export function trackJobView(job: {
   });
   
   // Update Personalize after EVERY view for real-time personalization
-  updatePersonalizeAttributes(behavior);
+  syncBehaviorToPersonalize(behavior);
 }
 
 /**
@@ -339,7 +339,7 @@ export function trackBlogRead(blog: {
   });
   
   // Update Personalize after EVERY blog read
-  updatePersonalizeAttributes(behavior);
+  syncBehaviorToPersonalize(behavior);
 }
 
 /**
@@ -369,7 +369,7 @@ export function trackJobApplication(job: {
   });
   
   // Update Personalize immediately for applications
-  updatePersonalizeAttributes(behavior);
+  syncBehaviorToPersonalize(behavior);
 }
 
 /**
@@ -428,7 +428,7 @@ export function trackSessionStart(): void {
   
   // Update Personalize for returning users
   if (behavior.sessionCount > 1) {
-    updatePersonalizeAttributes(behavior);
+    syncBehaviorToPersonalize(behavior);
   }
 }
 
@@ -439,6 +439,76 @@ export function updateTimeOnSite(additionalSeconds: number): void {
   const behavior = getUserBehavior();
   behavior.totalTimeOnSite += additionalSeconds;
   saveBehavior(behavior);
+}
+
+/**
+ * Update Personalize attributes with custom data
+ * Use this for skill gap analysis data or other custom attributes
+ */
+export async function updatePersonalizeAttributes(customAttributes: Record<string, any>): Promise<void> {
+  if (typeof window === 'undefined') return;
+  
+  try {
+    const { setPersonalizeAttributes } = await import('./contentstack-personalize');
+    await setPersonalizeAttributes(customAttributes);
+  } catch (error) {
+    console.error('Error updating Personalize attributes:', error);
+  }
+}
+
+/**
+ * Track learning resource view
+ */
+export function trackLearningView(learning: {
+  uid: string;
+  title: string;
+  technology: string;
+  skills?: string[];
+}): void {
+  const behavior = getUserBehavior();
+  
+  // Add technology/skill to interests
+  if (learning.technology) {
+    behavior.interestedSkills = updateInterests(behavior.interestedSkills, learning.technology);
+  }
+  
+  // Add skills covered to interests
+  if (learning.skills) {
+    learning.skills.forEach(skill => {
+      behavior.interestedSkills = updateInterests(behavior.interestedSkills, skill);
+    });
+  }
+  
+  // Save locally
+  saveBehavior(behavior);
+  
+  // Send to Lytics
+  sendToLytics('learning_view', {
+    learning_uid: learning.uid,
+    learning_title: learning.title,
+    technology: learning.technology,
+    skills: learning.skills?.join(','),
+  });
+}
+
+/**
+ * Track learning resource completion
+ */
+export function trackLearningComplete(learning: {
+  uid: string;
+  title: string;
+  technology: string;
+  skills?: string[];
+}): void {
+  // Send to Lytics
+  sendToLytics('learning_complete', {
+    learning_uid: learning.uid,
+    learning_title: learning.title,
+    technology: learning.technology,
+    skills: learning.skills?.join(','),
+  });
+  
+  // Could also update a "completed learnings" counter in behavior
 }
 
 // ============================================
