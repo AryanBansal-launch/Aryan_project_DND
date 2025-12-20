@@ -18,6 +18,7 @@
     "lint": "next lint"
   },
   "dependencies": {
+    "@aryanbansal-launch/edge-utils": "^0.1.1",
     "@contentstack/delivery-sdk": "^4.10.0",
     "@contentstack/live-preview-utils": "^4.0.2",
     "@contentstack/personalize-edge-sdk": "^1.0.19",
