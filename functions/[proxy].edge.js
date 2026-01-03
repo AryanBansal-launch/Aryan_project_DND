@@ -1,4 +1,4 @@
-import { basicAuth } from "@aryanbansal-launch/edge-utils";
+import { protectWithBasicAuth } from "@aryanbansal-launch/edge-utils";
 
 export default async function handler(request, context) {
   const url = new URL(request.url);
@@ -8,7 +8,7 @@ export default async function handler(request, context) {
     const adminUser = context.env.ADMIN_USERNAME || "admin";
     const adminPass = context.env.ADMIN_PASSWORD || "password";
 
-    const authResponse = basicAuth(request, adminUser, adminPass);
+    const authResponse = protectWithBasicAuth(request, adminUser, adminPass);
     if (authResponse) {
       return authResponse;
     }
