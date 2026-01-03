@@ -15,7 +15,10 @@ export default async function handler(request, context) {
         headers["Authorization"] = "Basic " + btoa("aryan:aryan");
       }
 
-      const res = await fetch(fetchUrl, { headers });
+      const res = await fetch(fetchUrl, { 
+        headers,
+        cache: 'no-store'
+      });
 
       if (!res.ok) {
         let errorData;
@@ -38,7 +41,10 @@ export default async function handler(request, context) {
           attemptedUrl: fetchUrl
         }), { 
           status: 500,
-          headers: { "content-type": "application/json" }
+          headers: { 
+            "content-type": "application/json",
+            "Cache-Control": "no-store, max-age=0"
+          }
         });
       }
 
@@ -57,13 +63,19 @@ export default async function handler(request, context) {
           generatedAt: new Date().toISOString(),
         }),
         {
-          headers: { "content-type": "application/json" },
+          headers: { 
+            "content-type": "application/json",
+            "Cache-Control": "no-store, max-age=0"
+          },
         }
       );
     } catch (error) {
       return new Response(JSON.stringify({ error: error.message }), {
         status: 500,
-        headers: { "content-type": "application/json" },
+        headers: { 
+          "content-type": "application/json",
+          "Cache-Control": "no-store, max-age=0"
+        },
       });
     }
   }

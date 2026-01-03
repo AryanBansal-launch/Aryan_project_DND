@@ -11,10 +11,17 @@ export async function GET(req: Request) {
   try {
     const paths = await getTopPaths(100);
 
-    return Response.json({
-      generatedAt: new Date().toISOString(),
-      paths,
-    });
+    return Response.json(
+      {
+        generatedAt: new Date().toISOString(),
+        paths,
+      },
+      {
+        headers: {
+          'Cache-Control': 'no-store, max-age=0',
+        },
+      }
+    );
   } catch (error: any) {
     console.error('Error in top-paths route:', error);
     return new Response(
@@ -22,7 +29,13 @@ export async function GET(req: Request) {
         error: 'Failed to fetch top paths',
         details: error.message || String(error),
       }),
-      { status: 500, headers: { 'Content-Type': 'application/json' } }
+      { 
+        status: 500, 
+        headers: { 
+          'Content-Type': 'application/json',
+          'Cache-Control': 'no-store, max-age=0'
+        } 
+      }
     );
   }
 }
