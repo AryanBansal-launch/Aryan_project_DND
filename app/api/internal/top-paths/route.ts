@@ -8,10 +8,21 @@ export async function GET(req: Request) {
     return new Response('Unauthorized', { status: 401 });
   }
 
-  const paths = await getTopPaths(100);
+  try {
+    const paths = await getTopPaths(100);
 
-  return Response.json({
-    generatedAt: new Date().toISOString(),
-    paths,
-  });
+    return Response.json({
+      generatedAt: new Date().toISOString(),
+      paths,
+    });
+  } catch (error: any) {
+    console.error('Error in top-paths route:', error);
+    return new Response(
+      JSON.stringify({
+        error: 'Failed to fetch top paths',
+        details: error.message || String(error),
+      }),
+      { status: 500, headers: { 'Content-Type': 'application/json' } }
+    );
+  }
 }

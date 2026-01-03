@@ -1,20 +1,6 @@
-import { protectWithBasicAuth } from "@aryanbansal-launch/edge-utils";
-
 export default async function handler(request, context) {
   const url = new URL(request.url);
 
-  // 1. Basic Auth for /admin routes using edge-utils
-  if (url.pathname.startsWith("/admin")) {
-    const adminUser = context.env.ADMIN_USERNAME || "admin";
-    const adminPass = context.env.ADMIN_PASSWORD || "password";
-
-    const authResponse = protectWithBasicAuth(request, adminUser, adminPass);
-    if (authResponse) {
-      return authResponse;
-    }
-  }
-
-  // 2. Original top-paths logic
   if (url.pathname === "/edge") {
     try {
       const siteOrigin = context.env.SITE_ORIGIN || "";
@@ -30,7 +16,21 @@ export default async function handler(request, context) {
       );
 
       if (!res.ok) {
-        return new Response(JSON.stringify({ urls: [] }), { status: 500 });
+        let errorData;
+        try {
+          errorData = await res.json();
+        } catch (e) {
+          errorData = { error: "Failed to fetch top paths", status: res.status };
+        }
+        return new Response(JSON.stringify({ 
+          urls: [], 
+          error: errorData.error || "Upstream error",
+          details: errorData.details || "No details provided",
+          status: res.status 
+        }), { 
+          status: 500,
+          headers: { "content-type": "application/json" }
+        });
       }
 
       const data = await res.json();
