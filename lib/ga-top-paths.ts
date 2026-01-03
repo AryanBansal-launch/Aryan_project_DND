@@ -16,8 +16,8 @@ export async function getTopPaths(limit = 100): Promise<string[]> {
   });
 
   return (
-    res.rows
+    (res.rows
       ?.map(r => r.dimensionValues?.[0].value)
-      .filter(Boolean) ?? []
+      .filter((v): v is string => typeof v === 'string') as string[]) ?? []
   );
 }
