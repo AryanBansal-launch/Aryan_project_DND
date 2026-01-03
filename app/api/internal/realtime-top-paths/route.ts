@@ -29,6 +29,8 @@ export async function GET(req: Request) {
       JSON.stringify({
         error: 'Failed to fetch realtime top paths',
         details: error.message || String(error),
+        code: error.code,
+        metadata: error.metadata,
       }),
       { 
         status: 500, 
