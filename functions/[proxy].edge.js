@@ -6,7 +6,7 @@ export default async function handler(request, context) {
       const siteOrigin = context.env.SITE_ORIGIN || "";
       const internalSecret = context.env.INTERNAL_EDGE_SECRET || "";
       
-      const fetchUrl = `${siteOrigin}/api/internal/realtime-top-paths?t=${Date.now()}`;
+      const fetchUrl = `${siteOrigin}/api/internal/realtime-top-paths`;
       const headers = {
         "x-internal-secret": internalSecret,
         "Cache-Control": "no-cache, no-store, must-revalidate",

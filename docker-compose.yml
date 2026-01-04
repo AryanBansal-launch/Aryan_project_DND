@@ -1,0 +1,45 @@
+services:
+  db:
+    image: postgres:15-alpine
+    restart: always
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER:-postgres}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-postgres}
+      POSTGRES_DB: ${POSTGRES_DB:-jobportal}
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+      - ./scripts/init-db.sql:/docker-entrypoint-initdb.d/init-db.sql
+
+  app:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    ports:
+      - "3000:3000"
+    environment:
+      - DATABASE_URL=postgresql://${POSTGRES_USER:-postgres}:${POSTGRES_PASSWORD:-postgres}@db:5432/${POSTGRES_DB:-jobportal}?sslmode=disable
+      - NEXTAUTH_URL=${NEXTAUTH_URL:-http://localhost:3000}
+      - NEXTAUTH_SECRET=${NEXTAUTH_SECRET}
+      - GOOGLE_CLIENT_ID=${GOOGLE_CLIENT_ID}
+      - GOOGLE_CLIENT_SECRET=${GOOGLE_CLIENT_SECRET}
+      - NEXT_PUBLIC_ALGOLIA_APP_ID=${NEXT_PUBLIC_ALGOLIA_APP_ID}
+      - NEXT_PUBLIC_ALGOLIA_SEARCH_KEY=${NEXT_PUBLIC_ALGOLIA_SEARCH_KEY}
+      - NEXT_PUBLIC_ALGOLIA_INDEX_NAME=${NEXT_PUBLIC_ALGOLIA_INDEX_NAME}
+      - ADMIN_USERNAME=${ADMIN_USERNAME}
+      - ADMIN_PASSWORD=${ADMIN_PASSWORD}
+      - CONTENTSTACK_API_KEY=${CONTENTSTACK_API_KEY}
+      - CONTENTSTACK_DELIVERY_TOKEN=${CONTENTSTACK_DELIVERY_TOKEN}
+      - CONTENTSTACK_ENVIRONMENT=${CONTENTSTACK_ENVIRONMENT}
+      - CONTENTSTACK_REGION=${CONTENTSTACK_REGION}
+      - CONTENTSTACK_MANAGEMENT_TOKEN=${CONTENTSTACK_MANAGEMENT_TOKEN}
+      - CONTENTSTACK_AUTOMATE_WEBHOOK_URL=${CONTENTSTACK_AUTOMATE_WEBHOOK_URL}
+      - CONTENTSTACK_NEW_JOB_EMAIL_WEBHOOK=${CONTENTSTACK_NEW_JOB_EMAIL_WEBHOOK}
+      - CONTENTSTACK_WEBHOOK_SECRET=${CONTENTSTACK_WEBHOOK_SECRET}
+    depends_on:
+      - db
+
+volumes:
+  postgres_data:
+
