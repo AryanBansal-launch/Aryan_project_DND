@@ -6,19 +6,19 @@ export default async function handler(request, context) {
       const siteOrigin = context.env.SITE_ORIGIN || "";
       const internalSecret = context.env.INTERNAL_EDGE_SECRET || "";
       
-      const fetchUrl = `${siteOrigin}/api/internal/top-paths`;
+      const fetchUrl = `${siteOrigin}/api/internal/realtime-top-paths?t=${Date.now()}`;
       const headers = {
         "x-internal-secret": internalSecret,
+        "Cache-Control": "no-cache, no-store, must-revalidate",
+        "Pragma": "no-cache",
+        "Expires": "0"
       };
 
       if (context.env.LAUNCH_ENV === "testing") {
         headers["Authorization"] = "Basic " + btoa("aryan:aryan");
       }
 
-      const res = await fetch(fetchUrl, { 
-        headers,
-        cache: 'no-store'
-      });
+      const res = await fetch(fetchUrl, { headers });
 
       if (!res.ok) {
         let errorData;

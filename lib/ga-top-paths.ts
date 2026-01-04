@@ -31,21 +31,21 @@ export async function getRealtimeTopPaths(limit = 100): Promise<string[]> {
   try {
     const [res] = await gaClient.runRealtimeReport({
       property: `properties/${process.env.GA_PROPERTY_ID}`,
-      dimensions: [{ name: 'pagePath' }],
+      dimensions: [{ name: 'unifiedPagePath' }],
       metrics: [{ name: 'activeUsers' }],
-      limit,
+      limit: limit,
     });
 
-    return (
-      (res.rows
-        ?.sort((a, b) => {
-          const viewsA = parseInt(a.metricValues?.[0].value || '0', 10);
-          const viewsB = parseInt(b.metricValues?.[0].value || '0', 10);
-          return viewsB - viewsA;
-        })
-        .map(r => r.dimensionValues?.[0].value)
-        .filter((v): v is string => typeof v === 'string') as string[]) ?? []
-    );
+    if (!res.rows) return [];
+
+    return res.rows
+      .sort((a, b) => {
+        const valA = parseInt(a.metricValues?.[0]?.value || '0', 10);
+        const valB = parseInt(b.metricValues?.[0]?.value || '0', 10);
+        return valB - valA;
+      })
+      .map(r => r.dimensionValues?.[0]?.value)
+      .filter((v): v is string => typeof v === 'string');
   } catch (error) {
     console.error('GA Realtime Report Error:', error);
     throw error;
