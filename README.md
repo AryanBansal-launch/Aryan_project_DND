@@ -222,6 +222,31 @@ User Behavior (Job Views, Blog Reads)
 - `npm run start` - Start production server
 - `npm run lint` - Run ESLint
 
+## 🐳 Docker Support
+
+You can run the entire application using Docker and Docker Compose. This will set up both the Next.js application and a local PostgreSQL database.
+
+### Prerequisites
+- Docker and Docker Compose installed
+
+### Getting Started with Docker
+
+1. **Configure Environment Variables**
+   Ensure your `.env.local` (or `.env`) file is populated with the required keys (Contentstack, Algolia, etc.). Docker Compose will pass these to the application.
+
+2. **Run with Docker Compose**
+   ```bash
+   docker-compose up --build
+   ```
+
+3. **Access the Application**
+   The application will be available at [http://localhost:3000](http://localhost:3000).
+   The local PostgreSQL database will be initialized with the schema from `scripts/init-db.sql`.
+
+### Docker Architecture
+- **app**: Next.js 15 application running in a multi-stage production build.
+- **db**: PostgreSQL 15 database for local user data and skills.
+
 ## 📱 Pages Overview
 
 ### Homepage (`/`)

@@ -1,5 +1,6 @@
 /** @type {import('next').NextConfig} */
 const nextConfig = {
+  output: 'standalone',
   images: {
     // Configure allowed hostnames for Next.js Image Optimization
     remotePatterns: [

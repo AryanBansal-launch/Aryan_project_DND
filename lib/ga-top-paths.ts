@@ -32,7 +32,7 @@ export async function getRealtimeTopPaths(limit = 100): Promise<string[]> {
     const [res] = await gaClient.runRealtimeReport({
       property: `properties/${process.env.GA_PROPERTY_ID}`,
       dimensions: [{ name: 'unifiedPagePath' }],
-      metrics: [{ name: 'activeUsers' }],
+      metrics: [{ name: 'screenPageViews' }],
       limit: limit,
     });
 

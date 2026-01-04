@@ -1,0 +1,17 @@
+node_modules
+.next
+out
+build
+dist
+.env
+.env.local
+.env.production
+.env.test
+.git
+.gitignore
+*.md
+LICENSE
+.cursor
+terminals
+scripts/init-db.sql
+
