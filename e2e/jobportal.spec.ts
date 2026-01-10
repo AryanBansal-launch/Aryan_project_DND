@@ -5,6 +5,7 @@ import { test, expect } from '@playwright/test';
  * 
  * This comprehensive test covers all major features of the JobPortal application:
  * - Homepage & Navigation
+ * - Welcome Popup (First-time visitor)
  * - Job Discovery & Search
  * - Job Details
  * - Companies Page
@@ -18,11 +19,19 @@ import { test, expect } from '@playwright/test';
 
 test.describe('JobPortal E2E Test Suite', () => {
   
+  // Storage key for welcome popup
+  const WELCOME_POPUP_KEY = 'jobportal_welcome_seen';
+
   // ============================================
   // HOMEPAGE & NAVIGATION
   // ============================================
   
   test.describe('Homepage', () => {
+    // Dismiss welcome popup before each test in this section
+    test.beforeEach(async ({ page }) => {
+      await page.goto('/');
+      await page.evaluate((key) => localStorage.setItem(key, 'true'), WELCOME_POPUP_KEY);
+    });
     test('should load homepage with hero section', async ({ page }) => {
       await page.goto('/');
       
@@ -63,10 +72,146 @@ test.describe('JobPortal E2E Test Suite', () => {
   });
 
   // ============================================
+  // WELCOME POPUP (First-time Visitor)
+  // ============================================
+  
+  test.describe('Welcome Popup', () => {
+    const STORAGE_KEY = 'jobportal_welcome_seen';
+
+    test('should show welcome popup for first-time visitors', async ({ page }) => {
+      // Clear localStorage to simulate first visit
+      await page.goto('/');
+      await page.evaluate((key) => localStorage.removeItem(key), STORAGE_KEY);
+      
+      // Reload page to trigger first-visit experience
+      await page.reload();
+      
+      // Wait for popup to appear (it has a 1.5s delay)
+      const popup = page.locator('text=Welcome to JobPortal');
+      await expect(popup).toBeVisible({ timeout: 5000 });
+      
+      // Check popup content
+      await expect(page.locator('text=Want to explore all the powerful features')).toBeVisible();
+      await expect(page.locator('text=Explore Platform Overview')).toBeVisible();
+      await expect(page.locator('text=Maybe Later')).toBeVisible();
+    });
+
+    test('should not show popup if already seen', async ({ page }) => {
+      // Set localStorage to indicate popup was already seen
+      await page.goto('/');
+      await page.evaluate((key) => localStorage.setItem(key, 'true'), STORAGE_KEY);
+      
+      // Reload page
+      await page.reload();
+      
+      // Wait a bit longer than the popup delay
+      await page.waitForTimeout(2000);
+      
+      // Popup should NOT be visible
+      const popup = page.locator('text=Welcome to JobPortal');
+      await expect(popup).not.toBeVisible();
+    });
+
+    test('should navigate to overview page when clicking Explore button', async ({ page }) => {
+      // Clear localStorage to simulate first visit
+      await page.goto('/');
+      await page.evaluate((key) => localStorage.removeItem(key), STORAGE_KEY);
+      await page.reload();
+      
+      // Wait for popup to appear
+      const exploreButton = page.locator('button:has-text("Explore Platform Overview")');
+      await expect(exploreButton).toBeVisible({ timeout: 5000 });
+      
+      // Click the explore button
+      await exploreButton.click();
+      
+      // Wait for navigation
+      await page.waitForURL('**/overview', { timeout: 5000 });
+      
+      // Verify we're on the overview page
+      expect(page.url()).toContain('/overview');
+      
+      // Popup should be gone
+      const popup = page.locator('text=Welcome to JobPortal');
+      await expect(popup).not.toBeVisible();
+    });
+
+    test('should dismiss popup when clicking Maybe Later', async ({ page }) => {
+      // Clear localStorage to simulate first visit
+      await page.goto('/');
+      await page.evaluate((key) => localStorage.removeItem(key), STORAGE_KEY);
+      await page.reload();
+      
+      // Wait for popup to appear
+      const maybeLaterButton = page.locator('button:has-text("Maybe Later")');
+      await expect(maybeLaterButton).toBeVisible({ timeout: 5000 });
+      
+      // Click Maybe Later
+      await maybeLaterButton.click();
+      
+      // Wait for animation to complete
+      await page.waitForTimeout(500);
+      
+      // Popup should be gone
+      const popup = page.locator('text=Welcome to JobPortal');
+      await expect(popup).not.toBeVisible();
+      
+      // Should still be on the same page (not navigated)
+      expect(page.url()).not.toContain('/overview');
+    });
+
+    test('should dismiss popup when clicking backdrop', async ({ page }) => {
+      // Clear localStorage to simulate first visit
+      await page.goto('/');
+      await page.evaluate((key) => localStorage.removeItem(key), STORAGE_KEY);
+      await page.reload();
+      
+      // Wait for popup to appear
+      const popup = page.locator('text=Welcome to JobPortal');
+      await expect(popup).toBeVisible({ timeout: 5000 });
+      
+      // Click on backdrop (the semi-transparent overlay)
+      // The backdrop is the first fixed element with bg-black/50
+      await page.locator('.fixed.inset-0.bg-black\\/50').click({ position: { x: 10, y: 10 } });
+      
+      // Wait for animation to complete
+      await page.waitForTimeout(500);
+      
+      // Popup should be gone
+      await expect(popup).not.toBeVisible();
+    });
+
+    test('should set localStorage after dismissing popup', async ({ page }) => {
+      // Clear localStorage to simulate first visit
+      await page.goto('/');
+      await page.evaluate((key) => localStorage.removeItem(key), STORAGE_KEY);
+      await page.reload();
+      
+      // Wait for popup and dismiss it
+      const maybeLaterButton = page.locator('button:has-text("Maybe Later")');
+      await expect(maybeLaterButton).toBeVisible({ timeout: 5000 });
+      await maybeLaterButton.click();
+      
+      // Wait for animation
+      await page.waitForTimeout(500);
+      
+      // Check localStorage was set
+      const storageValue = await page.evaluate((key) => localStorage.getItem(key), STORAGE_KEY);
+      expect(storageValue).toBe('true');
+    });
+  });
+
+  // ============================================
   // JOB DISCOVERY & SEARCH
   // ============================================
   
   test.describe('Jobs Page', () => {
+    // Dismiss welcome popup before each test
+    test.beforeEach(async ({ page }) => {
+      await page.goto('/');
+      await page.evaluate((key) => localStorage.setItem(key, 'true'), WELCOME_POPUP_KEY);
+    });
+
     test('should load jobs listing page', async ({ page }) => {
       await page.goto('/jobs');
       
@@ -112,6 +257,12 @@ test.describe('JobPortal E2E Test Suite', () => {
   // ============================================
   
   test.describe('Job Details', () => {
+    // Dismiss welcome popup before each test
+    test.beforeEach(async ({ page }) => {
+      await page.goto('/');
+      await page.evaluate((key) => localStorage.setItem(key, 'true'), WELCOME_POPUP_KEY);
+    });
+
     test('should navigate to job detail page', async ({ page }) => {
       await page.goto('/jobs');
       await page.waitForLoadState('networkidle');
@@ -192,6 +343,12 @@ test.describe('JobPortal E2E Test Suite', () => {
   // ============================================
   
   test.describe('Companies Page', () => {
+    // Dismiss welcome popup before each test
+    test.beforeEach(async ({ page }) => {
+      await page.goto('/');
+      await page.evaluate((key) => localStorage.setItem(key, 'true'), WELCOME_POPUP_KEY);
+    });
+
     test('should load companies page', async ({ page }) => {
       await page.goto('/companies');
       await page.waitForLoadState('networkidle');
@@ -219,6 +376,12 @@ test.describe('JobPortal E2E Test Suite', () => {
   // ============================================
   
   test.describe('Blog Section', () => {
+    // Dismiss welcome popup before each test
+    test.beforeEach(async ({ page }) => {
+      await page.goto('/');
+      await page.evaluate((key) => localStorage.setItem(key, 'true'), WELCOME_POPUP_KEY);
+    });
+
     test('should load blogs page', async ({ page }) => {
       await page.goto('/blogs');
       await page.waitForLoadState('networkidle');
@@ -267,6 +430,12 @@ test.describe('JobPortal E2E Test Suite', () => {
   // ============================================
   
   test.describe('Learning Hub', () => {
+    // Dismiss welcome popup before each test
+    test.beforeEach(async ({ page }) => {
+      await page.goto('/');
+      await page.evaluate((key) => localStorage.setItem(key, 'true'), WELCOME_POPUP_KEY);
+    });
+
     test('should load learnings page', async ({ page }) => {
       await page.goto('/learnings');
       await page.waitForLoadState('networkidle');
@@ -294,6 +463,12 @@ test.describe('JobPortal E2E Test Suite', () => {
   // ============================================
   
   test.describe('Authentication', () => {
+    // Dismiss welcome popup before each test
+    test.beforeEach(async ({ page }) => {
+      await page.goto('/');
+      await page.evaluate((key) => localStorage.setItem(key, 'true'), WELCOME_POPUP_KEY);
+    });
+
     test('should load login page', async ({ page }) => {
       await page.goto('/login');
       await page.waitForLoadState('networkidle');
@@ -344,6 +519,12 @@ test.describe('JobPortal E2E Test Suite', () => {
   // ============================================
   
   test.describe('Profile Page', () => {
+    // Dismiss welcome popup before each test
+    test.beforeEach(async ({ page }) => {
+      await page.goto('/');
+      await page.evaluate((key) => localStorage.setItem(key, 'true'), WELCOME_POPUP_KEY);
+    });
+
     test('should redirect unauthenticated users from profile', async ({ page }) => {
       await page.goto('/profile');
       await page.waitForLoadState('networkidle');
@@ -442,6 +623,12 @@ test.describe('JobPortal E2E Test Suite', () => {
   // ============================================
   
   test.describe('Personalization Features', () => {
+    // Dismiss welcome popup before each test
+    test.beforeEach(async ({ page }) => {
+      await page.goto('/');
+      await page.evaluate((key) => localStorage.setItem(key, 'true'), WELCOME_POPUP_KEY);
+    });
+
     test('should track page views (behavior tracking)', async ({ page }) => {
       await page.goto('/');
       await page.waitForLoadState('networkidle');
@@ -487,6 +674,12 @@ test.describe('JobPortal E2E Test Suite', () => {
   // ============================================
   
   test.describe('Responsive Design', () => {
+    // Dismiss welcome popup before each test
+    test.beforeEach(async ({ page }) => {
+      await page.goto('/');
+      await page.evaluate((key) => localStorage.setItem(key, 'true'), WELCOME_POPUP_KEY);
+    });
+
     test('should be responsive on mobile viewport', async ({ page }) => {
       // Set mobile viewport
       await page.setViewportSize({ width: 375, height: 667 });
@@ -524,6 +717,12 @@ test.describe('JobPortal E2E Test Suite', () => {
   // ============================================
   
   test.describe('Performance & Accessibility', () => {
+    // Dismiss welcome popup before each test
+    test.beforeEach(async ({ page }) => {
+      await page.goto('/');
+      await page.evaluate((key) => localStorage.setItem(key, 'true'), WELCOME_POPUP_KEY);
+    });
+
     test('should load homepage within acceptable time', async ({ page }) => {
       const startTime = Date.now();
       
@@ -584,6 +783,10 @@ test.describe('JobPortal E2E Test Suite', () => {
   
   test.describe('Error Handling', () => {
     test('should show 404 page for non-existent routes', async ({ page }) => {
+      // Dismiss welcome popup first
+      await page.goto('/');
+      await page.evaluate((key) => localStorage.setItem(key, 'true'), WELCOME_POPUP_KEY);
+      
       await page.goto('/this-page-does-not-exist-12345');
       await page.waitForLoadState('networkidle');
       
@@ -621,6 +824,12 @@ test.describe('JobPortal E2E Test Suite', () => {
   // ============================================
   
   test.describe('Complete User Journey', () => {
+    // Dismiss welcome popup before each test
+    test.beforeEach(async ({ page }) => {
+      await page.goto('/');
+      await page.evaluate((key) => localStorage.setItem(key, 'true'), WELCOME_POPUP_KEY);
+    });
+
     test('should complete full job seeker journey', async ({ page }) => {
       // 1. Land on homepage
       await page.goto('/');

@@ -6,6 +6,7 @@ import { SessionProvider } from "@/components/SessionProvider"; // Importing the
 import PersonalizedBanner from "@/components/PersonalizedBanner"; // Importing the PersonalizedBanner component
 import BehaviorTracker from "@/components/BehaviorTracker"; // Importing BehaviorTracker for personalization
 import SkillGapBanner from "@/components/SkillGapBanner"; // Importing SkillGapBanner for skill gap notifications
+import WelcomePopup from "@/components/WelcomePopup"; // Importing WelcomePopup for first-time visitors
 import { getNavigation, getPersonalizedBanner } from "@/lib/contentstack"; // Import CMS functions
 import { ContentstackNavigation } from "@/lib/types"; // Import type
 
@@ -63,6 +64,7 @@ export default async function RootLayout({
         <SessionProvider>
           <Navigation navigationData={navigationData as ContentstackNavigation | null} />
           <SkillGapBanner />
+          <WelcomePopup />
           <main className="min-h-screen">
             {children}
             <script src="https://chatbot-marketplace-try.contentstackapps.com/chatbot-widget.js?site_key=site-1763408244725-z9kudn" async></script>
