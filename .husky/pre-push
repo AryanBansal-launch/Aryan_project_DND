@@ -1,1 +1,5 @@
+echo "🧪 Running E2E tests..."
+npm run test
+
+echo "🏗️ Building project..."
 npm run build
