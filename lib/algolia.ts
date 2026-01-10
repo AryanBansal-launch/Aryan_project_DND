@@ -72,6 +72,12 @@ export interface RecommendationOptions {
   skills: string[];
   limit?: number;
   filters?: string;
+  // Geolocation for location-based boosting
+  geolocation?: {
+    country?: string;
+    region?: string;
+    city?: string;
+  };
 }
 
 /**
