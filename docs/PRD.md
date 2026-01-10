@@ -1,8 +1,8 @@
 # Product Requirements Document (PRD)
 # JobPortal - AI-Powered Job Discovery Platform
 
-**Version:** 1.1  
-**Last Updated:** December 14, 2025  
+**Version:** 1.2  
+**Last Updated:** January 10, 2026  
 **Author:** Aryan Bansal  
 **Status:** Production Ready
 
@@ -37,6 +37,7 @@
 |---------|------------|-------|
 | **Intelligent Search** | Algolia | Fuzzy matching, typo tolerance, instant results |
 | **Behavior-Based Personalization** | Lytics + Personalize | Real-time content adaptation based on user behavior |
+| **Location-Based Recommendations** | Launch Geolocation | Prioritize local jobs using visitor's country/region/city |
 | **Skill Gap Analysis** | Algolia + Contentstack | Identify missing skills and recommend learning resources |
 | **Learning Hub** | Contentstack + YouTube | Curated video tutorials with Brand Kit AI content |
 | **Automated Notifications** | Contentstack Automate | Instant email alerts for new jobs and applications |
@@ -128,6 +129,7 @@
 | **Fuzzy Matching** | Handles typos and misspellings | Algolia typo tolerance |
 | **Filter & Sort** | Location, job type, experience, salary | Contentstack queries |
 | **Skill-Based Recommendations** | Jobs matching user's profile skills | Algolia + NeonDB |
+| **Location-Based Recommendations** | Prioritize jobs in visitor's country/region/city | Launch Geolocation Headers |
 
 ### 5.2 User Management
 
@@ -326,7 +328,7 @@ CREATE TABLE applications (
 | **Data & Insights (Lytics)** | Behavior tracking | Analytics |
 | **Automate** | Workflow automation | Email notifications |
 | **Webhooks** | Event triggers | New job alerts |
-| **Launch** | Hosting | Production deployment |
+| **Launch** | Hosting + Geolocation | Production deployment with geo headers |
 | **Marketplace** | App integrations | Algolia, AI Chatbot |
 
 ### 7.2 Content Types
@@ -478,7 +480,48 @@ jstag.send('job_view', {
 └──────────────┘    └──────────────┘    └──────────────┘
 ```
 
-### 9.5 Skill Gap Analysis Flow
+### 9.5 Location-Based Job Recommendations Flow
+
+```
+┌──────────────┐    ┌──────────────┐    ┌──────────────┐
+│  User Request│───▶│  Launch Edge │───▶│  Inject Geo  │
+│  (Browser)   │    │  CDN         │    │  Headers     │
+└──────────────┘    └──────────────┘    └──────────────┘
+                                               │
+                    ┌──────────────────────────┘
+                    ▼
+             ┌──────────────┐
+             │ Edge Function│
+             │ [proxy].edge │
+             └──────┬───────┘
+                    │ Forward: x-visitor-country
+                    │          x-visitor-region
+                    │          x-visitor-city
+                    ▼
+             ┌──────────────┐    ┌──────────────┐
+             │  Next.js API │───▶│  Algolia     │
+             │  /api/jobs/  │    │  Search      │
+             │ recommendations│    │  (by skills) │
+             └──────┬───────┘    └──────────────┘
+                    │
+                    ▼
+             ┌──────────────────────────────────────────┐
+             │          LOCATION SCORING                 │
+             │  • Calculate location score per job      │
+             │  • City match = 1.0, Region = 0.8        │
+             │  • Country = 0.6, Remote = 0.3           │
+             │  • Combined: skill(60%) + location(40%) │
+             └──────────────────────────────────────────┘
+                    │
+                    ▼
+             ┌──────────────┐
+             │  Re-ranked   │
+             │  Results     │
+             │  (local first)│
+             └──────────────┘
+```
+
+### 9.6 Skill Gap Analysis Flow
 
 ```
 ┌──────────────┐    ┌──────────────┐    ┌──────────────┐
@@ -638,29 +681,59 @@ Response 200:
 }
 ```
 
-### 11.2 Job Recommendations API
+### 11.2 Job Recommendations API (with Geolocation)
 
 **POST /api/jobs/recommendations**
+
+The recommendations API now supports location-based prioritization using Launch's geolocation headers.
+
 ```json
 Request:
 {
   "skills": ["React", "Node.js"],
-  "limit": 10
+  "limit": 10,
+  "prioritizeLocal": true
 }
 
 Response 200:
 {
-  "hits": [
+  "success": true,
+  "recommendations": [
     {
-      "objectID": "blt123",
+      "id": "blt123",
       "title": "Frontend Developer",
-      "skillNames": ["React", "JavaScript"],
-      "_highlightResult": {...}
+      "location": "San Francisco, CA",
+      "matchScore": 0.85,
+      "matchingSkillsCount": 2,
+      "locationScore": 0.8,
+      "isLocalJob": true
     }
   ],
-  "nbHits": 25
+  "totalFound": 6,
+  "searchedSkills": ["React", "Node.js"],
+  "geolocation": {
+    "detected": true,
+    "country": "US",
+    "region": "California",
+    "city": "San Francisco",
+    "localJobsFound": 4
+  }
 }
 ```
+
+**Launch Geolocation Headers:**
+| Header | Description | Example |
+|--------|-------------|---------|
+| `visitor-ip-country` | ISO 2-letter country code | `US`, `IN`, `GB` |
+| `visitor-ip-region` | Region/state name | `California`, `Karnataka` |
+| `visitor-ip-city` | City name | `San Francisco`, `Bangalore` |
+
+**Scoring Algorithm:**
+- City match: 1.0
+- Region match: 0.8
+- Country match: 0.6
+- Remote jobs: 0.3 (base boost)
+- Combined score: `(skillMatch × 60%) + (locationMatch × 40%)`
 
 ### 11.3 Webhook - New Job
 
@@ -919,6 +992,7 @@ CONTENTSTACK_NEW_JOB_EMAIL_WEBHOOK=
 |---------|------|---------|
 | 1.0 | Dec 14, 2025 | Initial PRD |
 | 1.1 | Dec 14, 2025 | Added Learning Hub & Skill Gap Analysis features |
+| 1.2 | Jan 10, 2026 | Added Location-Based Job Recommendations using Launch Geolocation Headers |
 
 ---
 
