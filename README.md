@@ -134,8 +134,23 @@ User Behavior (Job Views, Blog Reads)
 | **Algolia** | Search integration - syncs content types to Algolia for fast search |
 | **AI Chatbot** | Chatbot fed with content context via Marketplace app and Automate webhook |
 
+### 8. Launch (Hosting + Geolocation)
 
-### 8. Content Types
+| Feature | Description | Implementation |
+|---------|-------------|----------------|
+| **Production Hosting** | Deploy Next.js app | Automatic builds on push |
+| **Edge Functions** | Run code at the edge | `functions/[proxy].edge.js` |
+| **Geolocation Headers** | Automatic visitor location | `visitor-ip-country`, `visitor-ip-region`, `visitor-ip-city` |
+| **Location-Based Recommendations** | Prioritize local jobs | `/api/jobs/recommendations` |
+
+#### Edge Function Endpoints
+
+| Endpoint | Description |
+|----------|-------------|
+| `/edge` | Returns top paths from Google Analytics for prefetching |
+| `/edge/geo` | Returns visitor's geolocation (country, region, city) |
+
+### 9. Content Types
 
 | Content Type | Purpose | Fields |
 |--------------|---------|--------|
@@ -286,17 +301,18 @@ You can run the entire application using Docker and Docker Compose. This will se
 - Job preferences and settings
 - **AI-Powered Job Recommendations** based on user skills
 
-## 🎯 Job Recommendations (Algolia)
+## 🎯 Job Recommendations (Algolia + Geolocation)
 
-The application uses **Algolia Search** to provide personalized job recommendations based on user skills.
+The application uses **Algolia Search** combined with **Launch Geolocation Headers** to provide personalized job recommendations based on user skills AND location.
 
 ### How It Works
 
 1. User adds skills to their profile
 2. Skills are saved to NeonDB
 3. When user clicks "Find Matching Jobs", skills are sent to Algolia
-4. Algolia returns jobs matching ANY of the user's skills (fuzzy matching)
-5. Results are displayed with match scores
+4. **Launch automatically injects visitor geolocation** (country, region, city)
+5. Jobs are scored by both skill match AND location proximity
+6. Results are re-ranked to prioritize local jobs
 
 ### Features
 
@@ -304,6 +320,29 @@ The application uses **Algolia Search** to provide personalized job recommendati
 - ✅ OR logic (matches jobs with ANY skill)
 - ✅ Match score ranking
 - ✅ Highlights matching skills
+- ✅ **Location-based prioritization** (city > region > country)
+- ✅ **Automatic geolocation** via Launch headers
+- ✅ **Remote job boosting** for all visitors
+
+### Launch Geolocation Headers
+
+When deployed on Contentstack Launch, these headers are automatically injected:
+
+| Header | Description | Example |
+|--------|-------------|---------|
+| `visitor-ip-country` | ISO 2-letter country code | `US`, `IN`, `GB` |
+| `visitor-ip-region` | Region/state name | `California`, `Karnataka` |
+| `visitor-ip-city` | City name | `San Francisco`, `Bangalore` |
+
+### Scoring Algorithm
+
+Jobs are ranked using a combined score:
+- **Skill Match (60%)**: How well the job matches user's skills
+- **Location Match (40%)**: How close the job is to the visitor
+  - City match: 1.0
+  - Region match: 0.8
+  - Country match: 0.6
+  - Remote jobs: 0.3 (base boost)
 
 ### Setup
 
@@ -536,6 +575,8 @@ curl -X POST "https://app.contentstack.com/automations-api/run/YOUR_WEBHOOK_ID" 
 |----------|--------|-------------|
 | `/api/webhooks/new-job` | POST | Receives Contentstack webhook when job is published |
 | `/api/applications/submit` | POST | Submits job application and sends confirmation email |
+| `/api/jobs/recommendations` | POST | Get job recommendations with location prioritization |
+| `/edge/geo` | GET | Returns visitor geolocation (Launch edge function) |
 
 ### Google OAuth Setup
 1. Go to [Google Cloud Console](https://console.cloud.google.com/)
