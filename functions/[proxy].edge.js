@@ -1,6 +1,28 @@
 export default async function handler(request, context) {
   const url = new URL(request.url);
 
+  // Extract Launch geolocation headers (automatically injected by Launch Edge)
+  const geoHeaders = {
+    country: request.headers.get('visitor-ip-country') || '',
+    region: request.headers.get('visitor-ip-region') || '',
+    city: request.headers.get('visitor-ip-city') || '',
+  };
+
+  // Endpoint to get visitor geolocation info
+  if (url.pathname === "/edge/geo") {
+    return new Response(JSON.stringify({
+      country: geoHeaders.country,
+      region: geoHeaders.region,
+      city: geoHeaders.city,
+      timestamp: new Date().toISOString(),
+    }), {
+      headers: { 
+        "content-type": "application/json",
+        "Cache-Control": "no-store, max-age=0"
+      }
+    });
+  }
+
   if (url.pathname === "/edge") {
     try {
       const siteOrigin = context.env.SITE_ORIGIN || "";
@@ -80,6 +102,21 @@ export default async function handler(request, context) {
     }
   }
 
-  // Default: Pass through to the origin
-  return fetch(request);
+  // Default: Pass through to the origin with geolocation headers
+  // Clone the request and add geo headers so the Next.js app can use them
+  const modifiedHeaders = new Headers(request.headers);
+  
+  // Forward geolocation to the app (normalized header names)
+  if (geoHeaders.country) modifiedHeaders.set('x-visitor-country', geoHeaders.country);
+  if (geoHeaders.region) modifiedHeaders.set('x-visitor-region', geoHeaders.region);
+  if (geoHeaders.city) modifiedHeaders.set('x-visitor-city', geoHeaders.city);
+
+  const modifiedRequest = new Request(request.url, {
+    method: request.method,
+    headers: modifiedHeaders,
+    body: request.body,
+    redirect: request.redirect,
+  });
+
+  return fetch(modifiedRequest);
 }
