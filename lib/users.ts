@@ -103,6 +103,52 @@ export const verifyPassword = async (password: string, hashedPassword: string): 
 };
 
 // ============================================
+// OAUTH USER MANAGEMENT
+// ============================================
+
+// Find or create OAuth user (for Google, etc.)
+// This creates a user record for OAuth users who don't have a password
+export const findOrCreateOAuthUser = async (
+  email: string,
+  name: string,
+  provider: string
+): Promise<User> => {
+  try {
+    const sql = getDb();
+    
+    // Check if user already exists
+    const existingUser = await findUserByEmail(email);
+    if (existingUser) {
+      // User exists, return them (they might have registered via email or previous OAuth)
+      console.log(`[OAuth] Existing user found: ${email}`);
+      return existingUser;
+    }
+
+    // Create new user with a placeholder password (OAuth users don't need one)
+    // We use a secure random string that can't be used to login via credentials
+    const placeholderPassword = `oauth_${provider}_${Date.now()}_${Math.random().toString(36).slice(2)}`;
+    const hashedPassword = await bcrypt.hash(placeholderPassword, 10);
+
+    // Create new user
+    const result = await sql`
+      INSERT INTO users (email, name, password)
+      VALUES (${email.toLowerCase()}, ${name}, ${hashedPassword})
+      RETURNING id, email, name, password, created_at, updated_at
+    `;
+
+    if (result.length === 0) {
+      throw new Error('Failed to create OAuth user');
+    }
+
+    console.log(`[OAuth] New user created: ${email} via ${provider}`);
+    return result[0] as User;
+  } catch (error: any) {
+    console.error('Error in findOrCreateOAuthUser:', error);
+    throw new Error('Failed to find or create OAuth user');
+  }
+};
+
+// ============================================
 // GET ALL USERS (for notifications)
 // ============================================
 
