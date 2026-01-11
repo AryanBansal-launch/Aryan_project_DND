@@ -1,7 +1,7 @@
 import NextAuth, { NextAuthOptions } from "next-auth"
 import GoogleProvider from "next-auth/providers/google"
 import CredentialsProvider from "next-auth/providers/credentials"
-import { findUserByEmail, verifyPassword } from "./users"
+import { findUserByEmail, verifyPassword, findOrCreateOAuthUser } from "./users"
 
 export const authOptions: NextAuthOptions = {
   providers: [
@@ -47,10 +47,27 @@ export const authOptions: NextAuthOptions = {
     signIn: "/login",
   },
   callbacks: {
-    async signIn({ account }) {
-      // Allow Google OAuth sign in
+    async signIn({ account, user, profile }) {
+      // Handle Google OAuth sign in - save user to database
       if (account?.provider === "google") {
-        return true;
+        try {
+          const email = user.email || profile?.email;
+          const name = user.name || profile?.name || 'Google User';
+          
+          if (!email) {
+            console.error('[Auth] Google OAuth: No email provided');
+            return false;
+          }
+          
+          // Find or create the user in our database
+          await findOrCreateOAuthUser(email, name, 'google');
+          
+          return true;
+        } catch (error) {
+          console.error('[Auth] Error saving Google user to database:', error);
+          // Still allow sign in even if DB save fails (graceful degradation)
+          return true;
+        }
       }
       // Allow credentials sign in
       return true;
@@ -74,10 +91,26 @@ export const authOptions: NextAuthOptions = {
     async jwt({ token, account, user }) {
       if (account) {
         token.accessToken = account.access_token;
+        token.provider = account.provider;
+        
         if (user) {
-          token.id = user.id;
           token.email = user.email || undefined;
           token.name = user.name || undefined;
+          
+          // For OAuth users, fetch the database user ID
+          if (account.provider === 'google' && user.email) {
+            try {
+              const dbUser = await findUserByEmail(user.email);
+              if (dbUser) {
+                token.id = dbUser.id.toString();
+              }
+            } catch (error) {
+              console.error('[Auth] Error fetching OAuth user ID:', error);
+              token.id = user.id; // Fallback to OAuth provider ID
+            }
+          } else {
+            token.id = user.id;
+          }
         }
       }
       return token;
