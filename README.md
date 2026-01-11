@@ -438,7 +438,13 @@ npm run build
 3. Deploy automatically on push to main branch
 
 ### Environment Variables
-Create a `.env.local` file for local development:
+Copy `env.example` to `.env.local` and fill in your values:
+
+```bash
+cp env.example .env.local
+```
+
+Required environment variables:
 
 ```env
 # NextAuth Configuration
