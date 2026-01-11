@@ -8,7 +8,6 @@ import {
   BookOpen,
   Target,
   User,
-  Building2,
   FileText,
   Globe,
   Zap,
@@ -30,10 +29,8 @@ import {
   Settings,
   BarChart3,
   Languages,
-  Smartphone,
   Lock,
   Server,
-  Cpu,
   GitBranch,
   RefreshCw,
   MessageSquare,
@@ -43,6 +40,17 @@ import {
   Workflow,
   Monitor,
   PanelLeftClose,
+  UserPlus,
+  LogIn,
+  GraduationCap,
+  MousePointerClick,
+  Filter,
+  Heart,
+  Send,
+  ClipboardList,
+  Compass,
+  Building,
+  ChevronRight,
   type LucideIcon,
 } from "lucide-react";
 
@@ -486,6 +494,328 @@ const techStack = [
   { name: "Launch", description: "Edge hosting", icon: Globe, detail: "Geolocation, edge functions" },
 ];
 
+// User Journey Steps
+interface JourneyStep {
+  step: number;
+  title: string;
+  description: string;
+  route: string;
+  icon: LucideIcon;
+  color: string;
+  actions: string[];
+  tips: string[];
+  features: string[];
+}
+
+const userJourneySteps: JourneyStep[] = [
+  {
+    step: 1,
+    title: "Create Your Account",
+    description: "Start your job search journey by creating a free account. Choose between email/password or quick Google sign-in.",
+    route: "/register",
+    icon: UserPlus,
+    color: "from-blue-500 to-cyan-500",
+    actions: [
+      "Click 'Sign Up' or 'Get Started Free' button",
+      "Enter your name, email, and password OR click 'Sign up with Google'",
+      "Verify your email if using email/password signup",
+      "You'll be automatically logged in after registration"
+    ],
+    tips: [
+      "Use Google sign-in for the fastest setup",
+      "Your password must be at least 6 characters"
+    ],
+    features: ["Email/Password Auth", "Google OAuth", "Secure password hashing"]
+  },
+  {
+    step: 2,
+    title: "Set Up Your Profile & Skills",
+    description: "Add your skills to get personalized job recommendations and see your skill gap analysis.",
+    route: "/profile",
+    icon: User,
+    color: "from-purple-500 to-pink-500",
+    actions: [
+      "Navigate to 'Profile' from the navigation menu",
+      "Click 'Add Skills' to open the skill selector",
+      "Search or browse available skills (React, Python, AWS, etc.)",
+      "Click skills to add them to your profile",
+      "Skills are auto-saved to your account"
+    ],
+    tips: [
+      "Add at least 5 skills for better recommendations",
+      "Include both technical and soft skills",
+      "Skills sync across all your devices"
+    ],
+    features: ["Skill Management", "Auto-save", "Cross-device sync"]
+  },
+  {
+    step: 3,
+    title: "Browse & Search Jobs",
+    description: "Explore all available jobs with powerful search and filtering powered by Algolia.",
+    route: "/jobs",
+    icon: Search,
+    color: "from-green-500 to-emerald-500",
+    actions: [
+      "Go to the 'Jobs' page from the navigation",
+      "Use the search bar to find jobs by title, skill, or keyword",
+      "Notice: typos are automatically corrected (try 'Javscript')",
+      "Browse through job cards showing title, company, location, and salary"
+    ],
+    tips: [
+      "Search is instant - results update as you type",
+      "Local jobs are automatically prioritized based on your location",
+      "Click any job card to see full details"
+    ],
+    features: ["Full-text search", "Typo tolerance", "Location-based ranking"]
+  },
+  {
+    step: 4,
+    title: "Use Advanced Filters",
+    description: "Narrow down your job search with powerful filters to find exactly what you're looking for.",
+    route: "/jobs",
+    icon: Filter,
+    color: "from-orange-500 to-amber-500",
+    actions: [
+      "Click the 'Filters' button on the Jobs page",
+      "Filter by Location (city, state, country, or 'Remote')",
+      "Filter by Job Type (Full-time, Part-time, Contract, Freelance)",
+      "Filter by Experience Level (Entry, Mid, Senior, Lead)",
+      "Filter by Salary Range using the slider",
+      "Filter by Category (Engineering, Design, Marketing, etc.)",
+      "Click 'Apply Filters' to see filtered results"
+    ],
+    tips: [
+      "Combine multiple filters for precise results",
+      "Click 'Clear All' to reset filters",
+      "Filters work with search simultaneously"
+    ],
+    features: ["Multi-filter support", "Salary range slider", "Category selection"]
+  },
+  {
+    step: 5,
+    title: "Get Personalized Recommendations",
+    description: "Let AI find the best jobs for you based on your skills and browsing behavior.",
+    route: "/profile",
+    icon: Sparkles,
+    color: "from-violet-500 to-purple-500",
+    actions: [
+      "Make sure you've added skills to your profile",
+      "Click 'Find Matching Jobs' on your Profile page",
+      "Browse the 'Recommended For You' section on the Homepage",
+      "View personalized banners that change based on your behavior",
+      "The more you browse, the better recommendations become"
+    ],
+    tips: [
+      "Recommendations improve as you view more jobs",
+      "Your browsing behavior is tracked to personalize content",
+      "Look for the 'Recommended' badge on job cards"
+    ],
+    features: ["Skill-based matching", "Behavior tracking", "Personalized banners"]
+  },
+  {
+    step: 6,
+    title: "Analyze Your Skill Gaps",
+    description: "Discover which skills you're missing that are in high demand in the job market.",
+    route: "/profile",
+    icon: TrendingUp,
+    color: "from-red-500 to-rose-500",
+    actions: [
+      "Visit your Profile page while logged in",
+      "View your 'Market Match' percentage score",
+      "Check 'Your Skills' section to see which skills you have",
+      "Review 'Skills to Learn' to see high-demand skills you're missing",
+      "Each skill gap shows how many more jobs you'd qualify for",
+      "Click a skill gap to see related learning resources"
+    ],
+    tips: [
+      "Focus on skills that unlock the most job opportunities",
+      "The skill gap analysis updates in real-time",
+      "Look for the site-wide skill gap banner for quick insights"
+    ],
+    features: ["Market analysis", "Gap identification", "Job impact calculation"]
+  },
+  {
+    step: 7,
+    title: "Learn New Skills",
+    description: "Bridge your skill gaps with curated video tutorials from the Learning Hub.",
+    route: "/learnings",
+    icon: GraduationCap,
+    color: "from-teal-500 to-cyan-500",
+    actions: [
+      "Navigate to 'Learning Hub' from the navigation menu",
+      "Browse tutorials by technology (React, Node.js, Python, etc.)",
+      "Filter by difficulty level (Beginner, Intermediate, Advanced)",
+      "Click any tutorial card to view details and watch the video",
+      "Check 'Skills Covered' tags to see what you'll learn",
+      "Explore 'Related Resources' for more tutorials on the same topic"
+    ],
+    tips: [
+      "Start with beginner tutorials if you're new to a technology",
+      "Learning resources are linked from your skill gap analysis",
+      "Bookmark tutorials to watch later"
+    ],
+    features: ["YouTube integration", "Difficulty filtering", "Skills tagging"]
+  },
+  {
+    step: 8,
+    title: "View Job Details",
+    description: "Get comprehensive information about a job before applying.",
+    route: "/jobs",
+    icon: Eye,
+    color: "from-sky-500 to-blue-500",
+    actions: [
+      "Click any job card on the Jobs page",
+      "Read the full job description and requirements",
+      "View company information (click company name for full profile)",
+      "Check salary range, location, and job type",
+      "See required skills and experience level",
+      "View 'Similar Jobs' at the bottom for more options"
+    ],
+    tips: [
+      "Compare your skills with job requirements",
+      "Research the company before applying",
+      "Save jobs you're interested in for later"
+    ],
+    features: ["Full descriptions", "Company profiles", "Similar jobs"]
+  },
+  {
+    step: 9,
+    title: "Apply for a Job",
+    description: "Submit your application with cover letter and additional details.",
+    route: "/jobs",
+    icon: Send,
+    color: "from-emerald-500 to-green-500",
+    actions: [
+      "Click 'Apply Now' on any job detail page",
+      "If not logged in, you'll be prompted to sign in first",
+      "Fill out the application form:",
+      "  • Write a compelling cover letter",
+      "  • Add your portfolio link (optional)",
+      "  • Enter expected salary (optional)",
+      "  • Specify your availability",
+      "  • Add any additional information",
+      "Click 'Submit Application'",
+      "You'll receive an email confirmation immediately"
+    ],
+    tips: [
+      "Personalize your cover letter for each job",
+      "Include relevant portfolio projects",
+      "Be realistic about salary expectations"
+    ],
+    features: ["Application form", "Email confirmation", "Duplicate prevention"]
+  },
+  {
+    step: 10,
+    title: "Track Your Applications",
+    description: "Monitor the status of all your job applications in one place.",
+    route: "/applications",
+    icon: ClipboardList,
+    color: "from-indigo-500 to-violet-500",
+    actions: [
+      "Go to 'My Applications' from the navigation or profile",
+      "View all your submitted applications",
+      "Filter by status (Submitted, Reviewed, Shortlisted, Interview, etc.)",
+      "Click any application to see full details",
+      "Withdraw applications you no longer want (while status is 'Submitted')",
+      "Click 'View Job' to revisit the original job posting"
+    ],
+    tips: [
+      "Check regularly for status updates",
+      "You can withdraw applications before they're reviewed",
+      "Click the bell icon to see application notifications"
+    ],
+    features: ["Status tracking", "Filter by status", "Withdraw option"]
+  },
+  {
+    step: 11,
+    title: "Stay Updated with Notifications",
+    description: "Never miss important updates with real-time notifications and email alerts.",
+    route: "/",
+    icon: Bell,
+    color: "from-rose-500 to-pink-500",
+    actions: [
+      "Click the bell icon (🔔) in the navigation bar",
+      "View your in-app notifications",
+      "Click any notification to see details",
+      "Application notifications have a 'View Application' button",
+      "Mark notifications as read or delete them",
+      "Check your email for new job alerts automatically"
+    ],
+    tips: [
+      "Enable browser notifications for real-time alerts",
+      "Check your spam folder if you don't see email notifications",
+      "Notifications show relative time (e.g., '2 hours ago')"
+    ],
+    features: ["In-app notifications", "Email alerts", "Real-time updates"]
+  },
+  {
+    step: 12,
+    title: "Chat with AI Assistant",
+    description: "Get instant help from our AI chatbot for job search and platform questions.",
+    route: "/",
+    icon: Bot,
+    color: "from-amber-500 to-orange-500",
+    actions: [
+      "Click the chat icon in the bottom-right corner",
+      "Ask questions about jobs, companies, or the platform",
+      "Try: 'Find me React jobs in San Francisco'",
+      "Try: 'What companies are hiring for Python developers?'",
+      "Try: 'How do I update my skills?'",
+      "The chatbot has context about all jobs and companies"
+    ],
+    tips: [
+      "Be specific in your questions for better answers",
+      "The chatbot is updated when new jobs are posted",
+      "Ask for help navigating the platform features"
+    ],
+    features: ["Context-aware responses", "Job search assistance", "Real-time content"]
+  },
+  {
+    step: 13,
+    title: "Explore Companies",
+    description: "Research companies before applying to make informed decisions.",
+    route: "/companies",
+    icon: Building,
+    color: "from-slate-500 to-gray-600",
+    actions: [
+      "Navigate to 'Companies' from the menu",
+      "Browse all companies with job listings",
+      "Click any company card for full profile",
+      "View company description, logo, and website",
+      "See all open positions at that company",
+      "Research company culture and values"
+    ],
+    tips: [
+      "Research companies before interviews",
+      "Company links open their official website",
+      "Check multiple open positions at companies you like"
+    ],
+    features: ["Company profiles", "Open positions", "Website links"]
+  },
+  {
+    step: 14,
+    title: "Read Industry Blogs",
+    description: "Stay informed with career tips, industry news, and professional insights.",
+    route: "/blogs",
+    icon: BookOpen,
+    color: "from-cyan-500 to-teal-500",
+    actions: [
+      "Go to 'Blogs' from the navigation menu",
+      "Browse blog posts about careers, tech, and job search tips",
+      "Use the language switcher for English or Hindi content",
+      "Click any blog post to read the full article",
+      "Share interesting articles with your network",
+      "Check back regularly for new content"
+    ],
+    tips: [
+      "Reading blogs improves your personalization profile",
+      "Content is available in multiple languages",
+      "Blog posts can help with interview preparation"
+    ],
+    features: ["Multi-language support", "Career insights", "Rich content"]
+  },
+];
+
 export default function OverviewPage() {
   return (
     <div className="min-h-screen bg-gradient-to-b from-slate-50 via-white to-slate-50">
@@ -530,13 +860,18 @@ export default function OverviewPage() {
               </Link>
             </div>
             
-            {/* Quick Links to PRD/TRD */}
-            <div className="mt-8 flex justify-center gap-6 text-sm">
+            {/* Quick Links to PRD/TRD/Journey */}
+            <div className="mt-8 flex flex-wrap justify-center gap-4 md:gap-6 text-sm">
+              <a href="#user-journey" className="text-purple-600 hover:text-purple-800 font-medium flex items-center gap-1">
+                <Compass className="w-4 h-4" />
+                User Journey
+              </a>
+              <span className="text-gray-300 hidden md:inline">|</span>
               <a href="#prd" className="text-blue-600 hover:text-blue-800 font-medium flex items-center gap-1">
                 <FileText className="w-4 h-4" />
                 View PRD
               </a>
-              <span className="text-gray-300">|</span>
+              <span className="text-gray-300 hidden md:inline">|</span>
               <a href="#trd" className="text-emerald-600 hover:text-emerald-800 font-medium flex items-center gap-1">
                 <Code className="w-4 h-4" />
                 View TRD
@@ -549,8 +884,9 @@ export default function OverviewPage() {
       {/* Quick Stats */}
       <section className="py-12 bg-white border-y border-gray-100">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="grid grid-cols-2 md:grid-cols-5 gap-6">
+          <div className="grid grid-cols-2 md:grid-cols-6 gap-6">
             {[
+              { value: "14", label: "User Journey Steps" },
               { value: "10+", label: "Feature Categories" },
               { value: "40+", label: "Individual Features" },
               { value: "9", label: "Contentstack Products" },
@@ -564,6 +900,167 @@ export default function OverviewPage() {
                 <div className="text-sm text-gray-600 mt-1">{stat.label}</div>
               </div>
             ))}
+          </div>
+        </div>
+      </section>
+
+      {/* User Journey Section */}
+      <section id="user-journey" className="py-20 bg-gradient-to-br from-slate-50 via-blue-50 to-purple-50">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          {/* Section Header */}
+          <div className="text-center mb-16">
+            <div className="inline-flex items-center px-4 py-2 bg-gradient-to-r from-blue-600 to-purple-600 text-white text-sm font-medium rounded-full mb-4">
+              <Compass className="w-4 h-4 mr-2" />
+              Complete User Guide
+            </div>
+            <h2 className="text-3xl md:text-5xl font-bold text-gray-900 mb-4">
+              Your Journey to{" "}
+              <span className="bg-gradient-to-r from-blue-600 via-purple-600 to-pink-600 bg-clip-text text-transparent">
+                Dream Job
+              </span>
+            </h2>
+            <p className="text-xl text-gray-600 max-w-3xl mx-auto">
+              Follow this step-by-step guide to unlock every feature and maximize your job search success. 
+              Each step builds on the previous one for the best experience.
+            </p>
+          </div>
+
+          {/* Journey Timeline */}
+          <div className="relative">
+            {/* Vertical Line (desktop) */}
+            <div className="hidden lg:block absolute left-1/2 top-0 bottom-0 w-1 bg-gradient-to-b from-blue-500 via-purple-500 to-pink-500 transform -translate-x-1/2" />
+
+            {/* Journey Steps */}
+            <div className="space-y-12 lg:space-y-0">
+              {userJourneySteps.map((step, index) => (
+                <div
+                  key={step.step}
+                  className={`relative lg:grid lg:grid-cols-2 lg:gap-12 lg:items-start ${
+                    index > 0 ? "lg:pt-16" : ""
+                  }`}
+                >
+                  {/* Step Number Circle (Center) - Desktop */}
+                  <div className="hidden lg:flex absolute left-1/2 transform -translate-x-1/2 z-10">
+                    <div className={`w-14 h-14 rounded-full bg-gradient-to-br ${step.color} flex items-center justify-center shadow-lg ring-4 ring-white`}>
+                      <span className="text-xl font-bold text-white">{step.step}</span>
+                    </div>
+                  </div>
+
+                  {/* Content Card - Alternating sides on desktop */}
+                  <div className={`${index % 2 === 0 ? "lg:pr-16" : "lg:col-start-2 lg:pl-16"}`}>
+                    <div className="bg-white rounded-2xl shadow-xl border border-gray-100 overflow-hidden hover:shadow-2xl transition-all duration-300 group">
+                      {/* Card Header */}
+                      <div className={`bg-gradient-to-r ${step.color} p-6 text-white`}>
+                        <div className="flex items-center gap-4">
+                          {/* Mobile Step Number */}
+                          <div className="lg:hidden w-10 h-10 bg-white/20 rounded-full flex items-center justify-center">
+                            <span className="font-bold">{step.step}</span>
+                          </div>
+                          <div className="p-3 bg-white/20 rounded-xl">
+                            <step.icon className="w-6 h-6" />
+                          </div>
+                          <div className="flex-1">
+                            <h3 className="text-xl font-bold">{step.title}</h3>
+                            <p className="text-sm text-white/80">{step.description}</p>
+                          </div>
+                        </div>
+                      </div>
+
+                      {/* Card Body */}
+                      <div className="p-6">
+                        {/* Actions */}
+                        <div className="mb-6">
+                          <h4 className="text-sm font-semibold text-gray-900 mb-3 flex items-center gap-2">
+                            <MousePointerClick className="w-4 h-4 text-blue-500" />
+                            Step-by-Step Actions
+                          </h4>
+                          <div className="space-y-2">
+                            {step.actions.map((action, actionIndex) => (
+                              <div key={actionIndex} className="flex items-start gap-2 text-sm">
+                                <ChevronRight className="w-4 h-4 text-gray-400 mt-0.5 flex-shrink-0" />
+                                <span className={`text-gray-600 ${action.startsWith("  •") ? "pl-4 text-gray-500" : ""}`}>
+                                  {action.replace(/^  •/, "•")}
+                                </span>
+                              </div>
+                            ))}
+                          </div>
+                        </div>
+
+                        {/* Tips */}
+                        <div className="mb-6 p-4 bg-amber-50 rounded-xl border border-amber-100">
+                          <h4 className="text-sm font-semibold text-amber-800 mb-2 flex items-center gap-2">
+                            <Zap className="w-4 h-4" />
+                            Pro Tips
+                          </h4>
+                          <ul className="space-y-1">
+                            {step.tips.map((tip, tipIndex) => (
+                              <li key={tipIndex} className="text-sm text-amber-700 flex items-start gap-2">
+                                <span className="text-amber-500">💡</span>
+                                {tip}
+                              </li>
+                            ))}
+                          </ul>
+                        </div>
+
+                        {/* Features Used */}
+                        <div className="flex flex-wrap gap-2">
+                          {step.features.map((feature, featureIndex) => (
+                            <span
+                              key={featureIndex}
+                              className="inline-flex items-center px-3 py-1 bg-gray-100 text-gray-700 text-xs font-medium rounded-full"
+                            >
+                              <CheckCircle2 className="w-3 h-3 mr-1 text-green-500" />
+                              {feature}
+                            </span>
+                          ))}
+                        </div>
+
+                        {/* Action Button */}
+                        <div className="mt-6 pt-4 border-t border-gray-100">
+                          <Link
+                            href={step.route}
+                            className={`inline-flex items-center px-5 py-2.5 bg-gradient-to-r ${step.color} text-white font-medium rounded-xl hover:shadow-lg transition-all duration-300 group-hover:scale-105`}
+                          >
+                            Try It Now
+                            <ArrowRight className="w-4 h-4 ml-2" />
+                          </Link>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Empty column for alternating layout */}
+                  {index % 2 === 0 && <div className="hidden lg:block" />}
+                </div>
+              ))}
+            </div>
+          </div>
+
+          {/* Journey Complete CTA */}
+          <div className="mt-20 text-center">
+            <div className="inline-flex items-center justify-center w-20 h-20 bg-gradient-to-br from-green-500 to-emerald-500 rounded-full mb-6 shadow-xl">
+              <CheckCircle2 className="w-10 h-10 text-white" />
+            </div>
+            <h3 className="text-2xl font-bold text-gray-900 mb-3">You&apos;re All Set!</h3>
+            <p className="text-gray-600 max-w-xl mx-auto mb-6">
+              You now know how to use every feature of JobPortal. Start your journey today 
+              and find your dream job with AI-powered recommendations!
+            </p>
+            <div className="flex flex-wrap justify-center gap-4">
+              <Link
+                href="/register"
+                className="inline-flex items-center px-8 py-4 bg-gradient-to-r from-blue-600 to-purple-600 text-white font-semibold rounded-xl hover:shadow-lg hover:shadow-blue-500/25 transition-all duration-300"
+              >
+                Start Your Journey
+                <ArrowRight className="w-5 h-5 ml-2" />
+              </Link>
+              <Link
+                href="/jobs"
+                className="inline-flex items-center px-8 py-4 bg-white text-gray-700 font-semibold rounded-xl border-2 border-gray-200 hover:border-blue-300 hover:bg-blue-50 transition-all duration-300"
+              >
+                Browse Jobs First
+              </Link>
+            </div>
           </div>
         </div>
       </section>
