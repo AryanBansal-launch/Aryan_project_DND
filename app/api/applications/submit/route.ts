@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { getServerSession } from "next-auth/next";
 import { authOptions } from "@/lib/auth";
 import { createNotificationInContentstack } from "@/lib/contentstack-notifications";
+import { createApplication, hasUserApplied } from "@/lib/users";
 
 export async function POST(request: NextRequest) {
   try {
@@ -29,6 +30,42 @@ export async function POST(request: NextRequest) {
       );
     }
 
+    // Check if user has already applied to this job
+    if (jobId) {
+      const alreadyApplied = await hasUserApplied(userEmail, jobId);
+      if (alreadyApplied) {
+        return NextResponse.json(
+          { error: "You have already applied to this job" },
+          { status: 409 }
+        );
+      }
+    }
+
+    // Generate unique application ID
+    const applicationId = `APP-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
+
+    // Save application to database
+    const savedApplication = await createApplication({
+      application_id: applicationId,
+      email: userEmail,
+      user_name: userName,
+      job_id: jobId || `JOB-${Date.now()}`,
+      job_title: jobTitle,
+      company_name: companyName,
+      status: 'submitted',
+      cover_letter: coverLetter,
+      portfolio: portfolio,
+      expected_salary: expectedSalary,
+      availability: availability,
+      additional_info: additionalInfo,
+      resume_file_name: resumeFileName,
+    });
+
+    if (!savedApplication) {
+      console.error("Failed to save application to database");
+      // Continue anyway - webhook and notification might still work
+    }
+
     // Prepare data for Contentstack Automate
     const automatePayload = {
       recipient_email: userEmail,
@@ -41,6 +78,7 @@ export async function POST(request: NextRequest) {
       availability: availability || "Not specified",
       additional_info: additionalInfo || "None",
       resume_file: resumeFileName || "Uploaded",
+      application_id: applicationId,
       application_date: new Date().toLocaleDateString("en-US", {
         year: "numeric",
         month: "long",
@@ -55,34 +93,29 @@ export async function POST(request: NextRequest) {
     // Get the Contentstack Automate webhook URL from environment
     const webhookUrl = process.env.CONTENTSTACK_AUTOMATE_WEBHOOK_URL;
 
-    if (!webhookUrl) {
-      console.error("CONTENTSTACK_AUTOMATE_WEBHOOK_URL not configured");
-      // Still return success to user, but log the error
-      return NextResponse.json({
-        success: true,
-        message: "Application submitted successfully"
-      });
-    }
+    if (webhookUrl) {
+      // Trigger Contentstack Automate webhook
+      try {
+        const automateResponse = await fetch(webhookUrl, {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify(automatePayload),
+        });
 
-    // Trigger Contentstack Automate webhook
-    const automateResponse = await fetch(webhookUrl, {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify(automatePayload),
-    });
-
-    if (!automateResponse.ok) {
-      console.error("Contentstack Automate webhook failed:", await automateResponse.text());
-      // Still return success to user
+        if (!automateResponse.ok) {
+          console.error("Contentstack Automate webhook failed:", await automateResponse.text());
+        }
+      } catch (webhookError) {
+        console.error("Webhook error:", webhookError);
+      }
     }
 
     // Create notification for the user in Contentstack
     try {
       const session = await getServerSession(authOptions);
       if (session?.user?.email) {
-        const applicationId = `APP-${Date.now()}`;
         await createNotificationInContentstack(
           session.user.email,
           'application',
@@ -101,16 +134,11 @@ export async function POST(request: NextRequest) {
       console.error("Error creating notification:", notificationError);
     }
 
-    // In a real application, you would also:
-    // 1. Save the application to a database
-    // 2. Upload the resume file to storage
-    // 3. Create an Application entry in Contentstack
-
-    const applicationId = `APP-${Date.now()}`;
     return NextResponse.json({
       success: true,
       message: "Application submitted successfully. You will receive a confirmation email shortly.",
-      applicationId
+      applicationId,
+      application: savedApplication
     });
 
   } catch (error) {

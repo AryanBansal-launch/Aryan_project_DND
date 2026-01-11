@@ -2,7 +2,8 @@
 
 import { useState, useEffect, useRef, useCallback } from "react";
 import { useSession } from "next-auth/react";
-import { Bell, Check, CheckCheck, X, Briefcase, Clock, Trash2 } from "lucide-react";
+import { useRouter } from "next/navigation";
+import { Bell, Check, CheckCheck, X, Briefcase, Clock, Trash2, ExternalLink } from "lucide-react";
 import { formatRelativeTime } from "@/lib/utils";
 
 interface Notification {
@@ -23,6 +24,7 @@ interface Notification {
 
 export default function NotificationDropdown() {
   const { data: session } = useSession();
+  const router = useRouter();
   const [isOpen, setIsOpen] = useState(false);
   const [notifications, setNotifications] = useState<Notification[]>([]);
   const [unreadCount, setUnreadCount] = useState(0);
@@ -273,6 +275,25 @@ export default function NotificationDropdown() {
                                 {formatRelativeTime(new Date(notification.createdAt))}
                               </span>
                             </div>
+                            {/* CTA Button for application notifications */}
+                            {notification.type === 'application' && notification.metadata?.applicationId && (
+                              <button
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  // Mark as read and navigate to applications page
+                                  if (!notification.read) {
+                                    markAsRead(notification.id);
+                                  }
+                                  setIsOpen(false);
+                                  // Navigate to applications page with the application highlighted
+                                  router.push(`/applications?highlight=${notification.metadata?.applicationId}`);
+                                }}
+                                className="mt-2 inline-flex items-center px-3 py-1.5 text-xs font-medium text-white bg-blue-600 hover:bg-blue-700 rounded-md transition-colors"
+                              >
+                                <ExternalLink className="w-3 h-3 mr-1" />
+                                View Application
+                              </button>
+                            )}
                           </div>
                           <div className="flex items-center space-x-1">
                             {!notification.read && (
