@@ -34,3 +34,32 @@ COMMENT ON TABLE user_skills IS 'Stores user skills linked by email. Works for b
 
 -- Note: Notifications are now stored in Contentstack CMS, not in the database
 
+-- Create applications table to store job applications
+CREATE TABLE IF NOT EXISTS applications (
+  id SERIAL PRIMARY KEY,
+  application_id VARCHAR(50) UNIQUE NOT NULL,
+  email VARCHAR(255) NOT NULL,
+  user_name VARCHAR(255) NOT NULL,
+  job_id VARCHAR(255) NOT NULL,
+  job_title VARCHAR(255) NOT NULL,
+  company_name VARCHAR(255) NOT NULL,
+  status VARCHAR(50) DEFAULT 'submitted',
+  cover_letter TEXT,
+  portfolio VARCHAR(500),
+  expected_salary VARCHAR(100),
+  availability VARCHAR(255),
+  additional_info TEXT,
+  resume_file_name VARCHAR(255),
+  notes TEXT,
+  created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+  updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+
+-- Create indexes for faster lookups
+CREATE INDEX IF NOT EXISTS idx_applications_email ON applications(email);
+CREATE INDEX IF NOT EXISTS idx_applications_job_id ON applications(job_id);
+CREATE INDEX IF NOT EXISTS idx_applications_status ON applications(status);
+
+-- Add comment to table
+COMMENT ON TABLE applications IS 'Stores job applications submitted by users';
+

@@ -231,3 +231,182 @@ export const removeUserSkill = async (email: string, skill: string): Promise<boo
   }
 };
 
+// ============================================
+// JOB APPLICATIONS FUNCTIONS
+// ============================================
+
+export interface ApplicationData {
+  id?: number;
+  application_id: string;
+  email: string;
+  user_name: string;
+  job_id: string;
+  job_title: string;
+  company_name: string;
+  status: 'submitted' | 'reviewed' | 'shortlisted' | 'interview' | 'rejected' | 'hired';
+  cover_letter?: string;
+  portfolio?: string;
+  expected_salary?: string;
+  availability?: string;
+  additional_info?: string;
+  resume_file_name?: string;
+  notes?: string;
+  created_at?: Date;
+  updated_at?: Date;
+}
+
+// Create a new application
+export const createApplication = async (data: Omit<ApplicationData, 'id' | 'created_at' | 'updated_at'>): Promise<ApplicationData | null> => {
+  try {
+    const sql = getDb();
+    
+    const result = await sql`
+      INSERT INTO applications (
+        application_id, email, user_name, job_id, job_title, company_name,
+        status, cover_letter, portfolio, expected_salary, availability,
+        additional_info, resume_file_name, notes
+      )
+      VALUES (
+        ${data.application_id},
+        ${data.email.toLowerCase()},
+        ${data.user_name},
+        ${data.job_id},
+        ${data.job_title},
+        ${data.company_name},
+        ${data.status || 'submitted'},
+        ${data.cover_letter || null},
+        ${data.portfolio || null},
+        ${data.expected_salary || null},
+        ${data.availability || null},
+        ${data.additional_info || null},
+        ${data.resume_file_name || null},
+        ${data.notes || null}
+      )
+      RETURNING *
+    `;
+    
+    return result.length > 0 ? result[0] as ApplicationData : null;
+  } catch (error) {
+    console.error('Error creating application:', error);
+    return null;
+  }
+};
+
+// Get all applications for a user
+export const getUserApplications = async (email: string): Promise<ApplicationData[]> => {
+  try {
+    const sql = getDb();
+    
+    const result = await sql`
+      SELECT *
+      FROM applications
+      WHERE LOWER(email) = LOWER(${email})
+      ORDER BY created_at DESC
+    `;
+    
+    return result as ApplicationData[];
+  } catch (error) {
+    console.error('Error getting user applications:', error);
+    return [];
+  }
+};
+
+// Get a specific application by ID
+export const getApplicationById = async (applicationId: string): Promise<ApplicationData | null> => {
+  try {
+    const sql = getDb();
+    
+    const result = await sql`
+      SELECT *
+      FROM applications
+      WHERE application_id = ${applicationId}
+      LIMIT 1
+    `;
+    
+    return result.length > 0 ? result[0] as ApplicationData : null;
+  } catch (error) {
+    console.error('Error getting application by ID:', error);
+    return null;
+  }
+};
+
+// Update application status
+export const updateApplicationStatus = async (
+  applicationId: string, 
+  status: ApplicationData['status'],
+  notes?: string
+): Promise<boolean> => {
+  try {
+    const sql = getDb();
+    
+    await sql`
+      UPDATE applications
+      SET status = ${status}, 
+          notes = COALESCE(${notes || null}, notes),
+          updated_at = CURRENT_TIMESTAMP
+      WHERE application_id = ${applicationId}
+    `;
+    
+    return true;
+  } catch (error) {
+    console.error('Error updating application status:', error);
+    return false;
+  }
+};
+
+// Check if user has already applied to a job
+export const hasUserApplied = async (email: string, jobId: string): Promise<boolean> => {
+  try {
+    const sql = getDb();
+    
+    const result = await sql`
+      SELECT 1
+      FROM applications
+      WHERE LOWER(email) = LOWER(${email})
+      AND job_id = ${jobId}
+      LIMIT 1
+    `;
+    
+    return result.length > 0;
+  } catch (error) {
+    console.error('Error checking if user applied:', error);
+    return false;
+  }
+};
+
+// Get application count for a user
+export const getUserApplicationCount = async (email: string): Promise<number> => {
+  try {
+    const sql = getDb();
+    
+    const result = await sql`
+      SELECT COUNT(*) as count
+      FROM applications
+      WHERE LOWER(email) = LOWER(${email})
+    `;
+    
+    return parseInt(result[0]?.count || '0', 10);
+  } catch (error) {
+    console.error('Error getting application count:', error);
+    return 0;
+  }
+};
+
+// Delete an application
+export const deleteApplication = async (applicationId: string, email: string): Promise<boolean> => {
+  try {
+    const sql = getDb();
+    
+    await sql`
+      DELETE FROM applications
+      WHERE application_id = ${applicationId}
+      AND LOWER(email) = LOWER(${email})
+    `;
+    
+    return true;
+  } catch (error) {
+    console.error('Error deleting application:', error);
+    return false;
+  }
+};
+

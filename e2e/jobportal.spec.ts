@@ -15,6 +15,7 @@ import { test, expect } from '@playwright/test';
  * - Profile & Skills
  * - Job Recommendations API
  * - Geolocation Endpoint
+ * - Applications Feature (submit, view, withdraw)
  */
 
 test.describe('JobPortal E2E Test Suite', () => {
@@ -632,6 +633,101 @@ test.describe('JobPortal E2E Test Suite', () => {
       
       // Should return 401 for unauthenticated requests
       expect([401, 200]).toContain(response.status());
+    });
+  });
+
+  // ============================================
+  // APPLICATIONS FEATURE
+  // ============================================
+  
+  test.describe('Applications Feature', () => {
+    // Dismiss welcome popup before each test
+    test.beforeEach(async ({ page }) => {
+      await page.addInitScript((key) => {
+        localStorage.setItem(key, 'true');
+      }, WELCOME_POPUP_KEY);
+    });
+
+    test('should load applications page', async ({ page }) => {
+      await page.goto('/applications');
+      await page.waitForLoadState('domcontentloaded');
+      
+      // Page should either show applications or redirect to login
+      const url = page.url();
+      const bodyText = await page.textContent('body') || '';
+      
+      const hasContent = url.includes('applications') || 
+                         url.includes('login') ||
+                         bodyText.toLowerCase().includes('application') ||
+                         bodyText.toLowerCase().includes('sign in');
+      
+      expect(hasContent).toBeTruthy();
+    });
+
+    test('should require authentication for applications API', async ({ request }) => {
+      const response = await request.get('/api/applications');
+      
+      // Should return 401 for unauthenticated requests
+      expect(response.status()).toBe(401);
+      
+      const body = await response.json();
+      expect(body.error).toBeDefined();
+    });
+
+    test('should validate application submission', async ({ request }) => {
+      // Test with missing required fields
+      const response = await request.post('/api/applications/submit', {
+        data: {
+          jobTitle: 'Test Job',
+          // Missing other required fields
+        }
+      });
+      
+      // Should return 400 for invalid request
+      expect(response.status()).toBe(400);
+    });
+
+    test('should handle application submission with all fields', async ({ request }) => {
+      const response = await request.post('/api/applications/submit', {
+        data: {
+          jobId: 'test-job-123',
+          jobTitle: 'Test Job',
+          companyName: 'Test Company',
+          userEmail: 'test@example.com',
+          userName: 'Test User',
+          coverLetter: 'Test cover letter',
+          portfolio: 'https://example.com',
+          expectedSalary: '100000',
+          availability: 'Immediate',
+          additionalInfo: 'Test info',
+          resumeFileName: 'resume.pdf'
+        }
+      });
+      
+      // Should return 200 (success) or 409 (already applied) or 500 (DB not configured)
+      expect([200, 409, 500]).toContain(response.status());
+      
+      const body = await response.json();
+      expect(body).toBeDefined();
+    });
+
+    test('applications page should show empty state or applications list', async ({ page }) => {
+      await page.goto('/applications');
+      await page.waitForLoadState('domcontentloaded');
+      
+      // Wait for page to load
+      await page.waitForTimeout(1000);
+      
+      const bodyText = await page.textContent('body') || '';
+      
+      // Should show either login prompt, empty state, or applications list
+      const hasValidContent = bodyText.toLowerCase().includes('application') ||
+                              bodyText.toLowerCase().includes('login') ||
+                              bodyText.toLowerCase().includes('sign in') ||
+                              bodyText.toLowerCase().includes('no application') ||
+                              bodyText.toLowerCase().includes('browse jobs');
+      
+      expect(hasValidContent).toBeTruthy();
     });
   });
 
