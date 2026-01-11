@@ -67,7 +67,10 @@ export default async function RootLayout({
           <WelcomePopup />
           <main className="min-h-screen">
             {children}
-            <script src="https://chatbot-marketplace-try.contentstackapps.com/chatbot-widget.js?site_key=site-1763408244725-z9kudn" async></script>
+            {/* Contentstack AI Chatbot Widget - configured via environment variable */}
+            {process.env.NEXT_PUBLIC_CHATBOT_WIDGET_URL && (
+              <script src={process.env.NEXT_PUBLIC_CHATBOT_WIDGET_URL} async></script>
+            )}
           </main>
           <PersonalizedBanner contentstackData={bannerData as any} />
         </SessionProvider>

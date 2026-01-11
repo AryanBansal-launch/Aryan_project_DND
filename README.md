@@ -465,6 +465,9 @@ ADMIN_PASSWORD=your-secure-admin-password
 CONTENTSTACK_AUTOMATE_WEBHOOK_URL=https://app.contentstack.com/automations-api/run/your-application-webhook
 CONTENTSTACK_NEW_JOB_EMAIL_WEBHOOK=https://app.contentstack.com/automations-api/run/your-new-job-webhook
 CONTENTSTACK_WEBHOOK_SECRET=your-webhook-secret
+
+# Contentstack AI Chatbot Widget (optional)
+NEXT_PUBLIC_CHATBOT_WIDGET_URL=https://chatbot-marketplace-try.contentstackapps.com/chatbot-widget.js?site_key=your-site-key
 ```
 
 ## 📧 Email Notifications
