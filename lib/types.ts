@@ -416,3 +416,29 @@ export interface ContentstackNotification {
   $?: any;
   _metadata?: any;
 }
+
+// Demo Video Types
+export interface DemoVideo {
+  id: string;
+  title: string;
+  description?: string;
+  videoUrl: string;
+  thumbnail?: File | null;
+  duration?: string;
+  createdAt: string;
+  updatedAt: string;
+}
+
+// Contentstack Demo Video type (matches CMS schema)
+export interface ContentstackDemoVideo {
+  uid: string;
+  title: string;
+  description?: string;
+  video?: File | null;
+  thumbnail?: File | null;
+  duration?: string;
+  created_at?: string;
+  updated_at?: string;
+  $?: any;
+  _metadata?: any;
+}
