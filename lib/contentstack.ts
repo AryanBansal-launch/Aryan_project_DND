@@ -688,3 +688,37 @@ export async function getLearningTechnologies() {
     return [];
   }
 }
+
+// ============================================
+// DEMO VIDEO
+// ============================================
+
+/**
+ * Fetch demo video content (singleton)
+ * This fetches a demo video entry from Contentstack that can be displayed on /demo route
+ */
+export async function getDemoVideo() {
+  try {
+    const result = await stack
+      .contentType("demo_video")
+      .entry()
+      .query()
+      .find();
+
+    if (result.entries && result.entries.length > 0) {
+      const entry = result.entries[0];
+      
+      if (process.env.NEXT_PUBLIC_CONTENTSTACK_PREVIEW === 'true') {
+        contentstack.Utils.addEditableTags(entry as any, 'demo_video', true);
+      }
+
+      return entry;
+    }
+
+    return null;
+  } catch (error) {
+    // Content type may not exist yet - return null
+    console.warn('Demo video not available:', error);
+    return null;
+  }
+}

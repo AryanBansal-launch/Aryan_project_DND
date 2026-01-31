@@ -21,7 +21,8 @@ import {
   BookOpen,
   GraduationCap,
   Compass,
-  Shield
+  Shield,
+  Play
 } from "lucide-react";
 import { cn, getInitials } from "@/lib/utils";
 import { ContentstackNavigation } from "@/lib/types";
@@ -196,6 +197,14 @@ export default function Navigation({ navigationData }: NavigationProps) {
                         Settings
                       </Link>
                       <Link
+                        href="/demo"
+                        className="flex items-center px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
+                        onClick={() => setIsUserMenuOpen(false)}
+                      >
+                        <Play className="w-4 h-4 mr-3" />
+                        Demo
+                      </Link>
+                      <Link
                         href="/overview"
                         className="flex items-center px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
                         onClick={() => setIsUserMenuOpen(false)}
@@ -316,6 +325,14 @@ export default function Navigation({ navigationData }: NavigationProps) {
                     >
                       <User className="w-5 h-5" />
                       <span>Profile</span>
+                    </Link>
+                    <Link
+                      href="/demo"
+                      className="flex items-center space-x-2 px-3 py-2 text-base font-medium text-gray-600 hover:text-gray-900 hover:bg-gray-100 rounded-md"
+                      onClick={() => setIsMenuOpen(false)}
+                    >
+                      <Play className="w-5 h-5" />
+                      <span>Demo</span>
                     </Link>
                     <Link
                       href="/overview"
