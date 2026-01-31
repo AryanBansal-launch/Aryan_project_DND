@@ -20,7 +20,8 @@ import {
   Settings,
   BookOpen,
   GraduationCap,
-  Compass
+  Compass,
+  Shield
 } from "lucide-react";
 import { cn, getInitials } from "@/lib/utils";
 import { ContentstackNavigation } from "@/lib/types";
@@ -202,6 +203,14 @@ export default function Navigation({ navigationData }: NavigationProps) {
                         <Compass className="w-4 h-4 mr-3" />
                         Platform Overview
                       </Link>
+                      <Link
+                        href="/admin"
+                        className="flex items-center px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
+                        onClick={() => setIsUserMenuOpen(false)}
+                      >
+                        <Shield className="w-4 h-4 mr-3" />
+                        Admin Panel
+                      </Link>
                       <hr className="my-1" />
                       <button
                         onClick={handleSignOut}
@@ -315,6 +324,14 @@ export default function Navigation({ navigationData }: NavigationProps) {
                     >
                       <Compass className="w-5 h-5" />
                       <span>Platform Overview</span>
+                    </Link>
+                    <Link
+                      href="/admin"
+                      className="flex items-center space-x-2 px-3 py-2 text-base font-medium text-gray-600 hover:text-gray-900 hover:bg-gray-100 rounded-md"
+                      onClick={() => setIsMenuOpen(false)}
+                    >
+                      <Shield className="w-5 h-5" />
+                      <span>Admin Panel</span>
                     </Link>
                     <button
                       onClick={handleSignOut}
