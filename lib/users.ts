@@ -456,3 +456,68 @@ export const deleteApplication = async (applicationId: string, email: string): P
   }
 };
 
+// ============================================
+// ADMIN FUNCTIONS
+// ============================================
+
+// Get all applications (for admin)
+export const getAllApplications = async (limit?: number, offset?: number): Promise<ApplicationData[]> => {
+  try {
+    const sql = getDb();
+    
+    let query = sql`
+      SELECT *
+      FROM applications
+      ORDER BY created_at DESC
+    `;
+    
+    if (limit !== undefined) {
+      query = sql`
+        SELECT *
+        FROM applications
+        ORDER BY created_at DESC
+        LIMIT ${limit}
+        ${offset !== undefined ? sql`OFFSET ${offset}` : sql``}
+      `;
+    }
+    
+    const result = await query;
+    return result as ApplicationData[];
+  } catch (error) {
+    console.error('Error getting all applications:', error);
+    return [];
+  }
+};
+
+// Get total application count
+export const getTotalApplicationCount = async (): Promise<number> => {
+  try {
+    const sql = getDb();
+    const result = await sql`
+      SELECT COUNT(*) as count FROM applications
+    `;
+    
+    return parseInt(result[0]?.count || '0', 10);
+  } catch (error) {
+    console.error('Error getting total application count:', error);
+    return 0;
+  }
+};
+
+// Get applications count for this month
+export const getApplicationsThisMonth = async (): Promise<number> => {
+  try {
+    const sql = getDb();
+    const result = await sql`
+      SELECT COUNT(*) as count 
+      FROM applications
+      WHERE created_at >= DATE_TRUNC('month', CURRENT_DATE)
+    `;
+    
+    return parseInt(result[0]?.count || '0', 10);
+  } catch (error) {
+    console.error('Error getting applications this month:', error);
+    return 0;
+  }
+};
+
