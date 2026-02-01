@@ -867,14 +867,9 @@ export default function OverviewPage() {
                 User Journey
               </a>
               <span className="text-gray-300 hidden md:inline">|</span>
-              <a href="#prd" className="text-blue-600 hover:text-blue-800 font-medium flex items-center gap-1">
+              <a href="#documentation" className="text-blue-600 hover:text-blue-800 font-medium flex items-center gap-1">
                 <FileText className="w-4 h-4" />
-                View PRD
-              </a>
-              <span className="text-gray-300 hidden md:inline">|</span>
-              <a href="#trd" className="text-emerald-600 hover:text-emerald-800 font-medium flex items-center gap-1">
-                <Code className="w-4 h-4" />
-                View TRD
+                Documentation
               </a>
             </div>
           </div>
@@ -1188,350 +1183,70 @@ export default function OverviewPage() {
         </div>
       </section>
 
-      {/* PRD Section */}
-      <section id="prd" className="py-16 bg-gradient-to-br from-blue-50 to-indigo-50">
+      {/* Documentation Section */}
+      <section id="documentation" className="py-16 bg-gradient-to-br from-slate-50 via-blue-50 to-purple-50">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="text-center mb-12">
-            <div className="inline-flex items-center px-4 py-2 bg-blue-100 text-blue-700 text-sm font-medium rounded-full mb-4">
+            <div className="inline-flex items-center px-4 py-2 bg-gradient-to-r from-blue-600 to-purple-600 text-white text-sm font-medium rounded-full mb-4">
               <FileText className="w-4 h-4 mr-2" />
-              Product Requirements Document
+              Complete Documentation
             </div>
-            <h2 className="text-3xl md:text-4xl font-bold text-gray-900 mb-4">PRD Overview</h2>
-            <p className="text-gray-600 max-w-2xl mx-auto">
-              Product vision, goals, and requirements for the JobPortal platform
+            <h2 className="text-3xl md:text-4xl font-bold text-gray-900 mb-4">
+              Product & Technical{" "}
+              <span className="bg-gradient-to-r from-blue-600 via-purple-600 to-pink-600 bg-clip-text text-transparent">
+                Documentation
+              </span>
+            </h2>
+            <p className="text-xl text-gray-600 max-w-3xl mx-auto">
+              Comprehensive product requirements and technical specifications for the JobDekho platform
             </p>
           </div>
 
-          <div className="grid md:grid-cols-2 gap-8">
-            {/* Product Vision */}
-            <div className="bg-white rounded-2xl p-8 shadow-lg border border-blue-100">
-              <div className="flex items-center gap-3 mb-6">
-                <div className="p-3 bg-blue-100 rounded-xl">
-                  <Target className="w-6 h-6 text-blue-600" />
+          <div className="grid md:grid-cols-2 gap-8 max-w-4xl mx-auto">
+            {/* PRD Card */}
+            <Link href="/docs/prd">
+              <div className="bg-white rounded-2xl shadow-xl p-8 hover:shadow-2xl transition-all duration-300 group cursor-pointer border-2 border-transparent hover:border-green-300">
+                <div className="flex items-center justify-center w-16 h-16 bg-gradient-to-br from-green-500 to-emerald-500 rounded-2xl mb-6 group-hover:scale-110 transition-transform shadow-lg">
+                  <BookOpen className="w-8 h-8 text-white" />
                 </div>
-                <h3 className="text-xl font-bold text-gray-900">Product Vision</h3>
-              </div>
-              <p className="text-gray-600 mb-4">
-                JobPortal is an AI-powered job discovery platform that connects job seekers with employers 
-                through personalized experiences, intelligent search, and skill-based recommendations.
-              </p>
-              <div className="space-y-3">
-                <div className="flex items-start gap-2">
-                  <CheckCircle2 className="w-5 h-5 text-green-500 mt-0.5 flex-shrink-0" />
-                  <span className="text-sm text-gray-600">Reduce time to find relevant jobs by 60%</span>
-                </div>
-                <div className="flex items-start gap-2">
-                  <CheckCircle2 className="w-5 h-5 text-green-500 mt-0.5 flex-shrink-0" />
-                  <span className="text-sm text-gray-600">Increase application quality through skill matching</span>
-                </div>
-                <div className="flex items-start gap-2">
-                  <CheckCircle2 className="w-5 h-5 text-green-500 mt-0.5 flex-shrink-0" />
-                  <span className="text-sm text-gray-600">Bridge skill gaps with integrated learning resources</span>
+                <h3 className="text-2xl font-bold text-gray-900 mb-3">
+                  Product Requirements Document
+                </h3>
+                <p className="text-gray-600 mb-6">
+                  Product vision, business goals, user journeys, core features, and success metrics for the platform.
+                </p>
+                <div className="flex items-center text-green-600 font-semibold group-hover:text-green-700 transition-colors">
+                  View PRD
+                  <ArrowRight className="w-5 h-5 ml-2 group-hover:translate-x-1 transition-transform" />
                 </div>
               </div>
-            </div>
+            </Link>
 
-            {/* Target Users */}
-            <div className="bg-white rounded-2xl p-8 shadow-lg border border-blue-100">
-              <div className="flex items-center gap-3 mb-6">
-                <div className="p-3 bg-purple-100 rounded-xl">
-                  <Users className="w-6 h-6 text-purple-600" />
+            {/* TRD Card */}
+            <Link href="/docs/trd">
+              <div className="bg-white rounded-2xl shadow-xl p-8 hover:shadow-2xl transition-all duration-300 group cursor-pointer border-2 border-transparent hover:border-blue-300">
+                <div className="flex items-center justify-center w-16 h-16 bg-gradient-to-br from-blue-500 to-cyan-500 rounded-2xl mb-6 group-hover:scale-110 transition-transform shadow-lg">
+                  <Code className="w-8 h-8 text-white" />
                 </div>
-                <h3 className="text-xl font-bold text-gray-900">Target Users</h3>
-              </div>
-              <div className="space-y-4">
-                <div className="p-4 bg-gray-50 rounded-xl">
-                  <h4 className="font-semibold text-gray-900 mb-1">Job Seekers (Primary)</h4>
-                  <p className="text-sm text-gray-600">Active seekers, passive candidates, first-time users, returning visitors</p>
-                </div>
-                <div className="p-4 bg-gray-50 rounded-xl">
-                  <h4 className="font-semibold text-gray-900 mb-1">Employers (Secondary)</h4>
-                  <p className="text-sm text-gray-600">Recruiters, HR managers posting jobs and reviewing applications</p>
-                </div>
-                <div className="p-4 bg-gray-50 rounded-xl">
-                  <h4 className="font-semibold text-gray-900 mb-1">Administrators</h4>
-                  <p className="text-sm text-gray-600">Content admins and system admins managing the platform</p>
+                <h3 className="text-2xl font-bold text-gray-900 mb-3">
+                  Technical Requirements Document
+                </h3>
+                <p className="text-gray-600 mb-6">
+                  System architecture, technology stack, database schema, API specifications, and deployment details.
+                </p>
+                <div className="flex items-center text-blue-600 font-semibold group-hover:text-blue-700 transition-colors">
+                  View TRD
+                  <ArrowRight className="w-5 h-5 ml-2 group-hover:translate-x-1 transition-transform" />
                 </div>
               </div>
-            </div>
-
-            {/* Key Problems Solved */}
-            <div className="bg-white rounded-2xl p-8 shadow-lg border border-blue-100">
-              <div className="flex items-center gap-3 mb-6">
-                <div className="p-3 bg-red-100 rounded-xl">
-                  <Zap className="w-6 h-6 text-red-600" />
-                </div>
-                <h3 className="text-xl font-bold text-gray-900">Problems Solved</h3>
-              </div>
-              <div className="space-y-3">
-                <div className="flex items-start gap-3 p-3 bg-red-50 rounded-lg">
-                  <span className="text-red-500 font-bold">→</span>
-                  <div>
-                    <p className="font-medium text-gray-900">Information Overload</p>
-                    <p className="text-sm text-gray-600">Thousands of listings without personalized filtering</p>
-                  </div>
-                </div>
-                <div className="flex items-start gap-3 p-3 bg-red-50 rounded-lg">
-                  <span className="text-red-500 font-bold">→</span>
-                  <div>
-                    <p className="font-medium text-gray-900">Irrelevant Recommendations</p>
-                    <p className="text-sm text-gray-600">Generic suggestions not matching skills/interests</p>
-                  </div>
-                </div>
-                <div className="flex items-start gap-3 p-3 bg-red-50 rounded-lg">
-                  <span className="text-red-500 font-bold">→</span>
-                  <div>
-                    <p className="font-medium text-gray-900">Skill Gap Blindness</p>
-                    <p className="text-sm text-gray-600">No insight into what skills to learn for better opportunities</p>
-                  </div>
-                </div>
-              </div>
-            </div>
-
-            {/* Success Metrics */}
-            <div className="bg-white rounded-2xl p-8 shadow-lg border border-blue-100">
-              <div className="flex items-center gap-3 mb-6">
-                <div className="p-3 bg-green-100 rounded-xl">
-                  <BarChart3 className="w-6 h-6 text-green-600" />
-                </div>
-                <h3 className="text-xl font-bold text-gray-900">Success Metrics</h3>
-              </div>
-              <div className="grid grid-cols-2 gap-4">
-                <div className="text-center p-4 bg-green-50 rounded-xl">
-                  <p className="text-2xl font-bold text-green-600">&gt;3 min</p>
-                  <p className="text-xs text-gray-600">Avg Session Duration</p>
-                </div>
-                <div className="text-center p-4 bg-green-50 rounded-xl">
-                  <p className="text-2xl font-bold text-green-600">&gt;5</p>
-                  <p className="text-xs text-gray-600">Jobs Viewed/Session</p>
-                </div>
-                <div className="text-center p-4 bg-green-50 rounded-xl">
-                  <p className="text-2xl font-bold text-green-600">&gt;40%</p>
-                  <p className="text-xs text-gray-600">Return Rate</p>
-                </div>
-                <div className="text-center p-4 bg-green-50 rounded-xl">
-                  <p className="text-2xl font-bold text-green-600">&gt;5%</p>
-                  <p className="text-xs text-gray-600">Application Rate</p>
-                </div>
-              </div>
-            </div>
+            </Link>
           </div>
 
-          {/* User Stories */}
-          <div className="mt-12 bg-white rounded-2xl p-8 shadow-lg border border-blue-100">
-            <div className="flex items-center gap-3 mb-6">
-              <div className="p-3 bg-indigo-100 rounded-xl">
-                <MessageSquare className="w-6 h-6 text-indigo-600" />
-              </div>
-              <h3 className="text-xl font-bold text-gray-900">Key User Stories</h3>
-            </div>
-            <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-4">
-              {[
-                { as: "Job Seeker", want: "search jobs by skills", so: "I can find relevant opportunities quickly" },
-                { as: "Job Seeker", want: "see my skill gaps", so: "I know what to learn for better opportunities" },
-                { as: "Job Seeker", want: "get personalized recommendations", so: "I don't miss relevant jobs" },
-                { as: "Job Seeker", want: "receive email alerts", so: "I'm notified when new jobs are posted" },
-                { as: "Employer", want: "post jobs easily", so: "I can attract qualified candidates" },
-                { as: "Admin", want: "manage content via CMS", so: "I can update the platform without code changes" },
-              ].map((story, index) => (
-                <div key={index} className="p-4 bg-indigo-50 rounded-xl">
-                  <p className="text-sm text-gray-700">
-                    <span className="font-semibold text-indigo-600">As a</span> {story.as},{" "}
-                    <span className="font-semibold text-indigo-600">I want to</span> {story.want},{" "}
-                    <span className="font-semibold text-indigo-600">so that</span> {story.so}.
-                  </p>
-                </div>
-              ))}
-            </div>
-          </div>
-        </div>
-      </section>
-
-      {/* TRD Section */}
-      <section id="trd" className="py-16 bg-gradient-to-br from-slate-900 via-gray-900 to-zinc-900 text-white">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="text-center mb-12">
-            <div className="inline-flex items-center px-4 py-2 bg-emerald-500/20 text-emerald-400 text-sm font-medium rounded-full mb-4">
-              <Code className="w-4 h-4 mr-2" />
-              Technical Requirements Document
-            </div>
-            <h2 className="text-3xl md:text-4xl font-bold mb-4">TRD Overview</h2>
-            <p className="text-gray-400 max-w-2xl mx-auto">
-              Technical architecture, database design, and integration specifications
+          {/* Info Note */}
+          <div className="mt-8 text-center">
+            <p className="text-sm text-gray-500">
+              📄 Password-protected documentation • Contact administrator for access
             </p>
-          </div>
-
-          <div className="grid md:grid-cols-2 gap-8">
-            {/* System Architecture */}
-            <div className="bg-white/5 backdrop-blur border border-white/10 rounded-2xl p-8">
-              <div className="flex items-center gap-3 mb-6">
-                <div className="p-3 bg-emerald-500/20 rounded-xl">
-                  <Server className="w-6 h-6 text-emerald-400" />
-                </div>
-                <h3 className="text-xl font-bold">System Architecture</h3>
-              </div>
-              <div className="space-y-4">
-                <div className="p-4 bg-white/5 rounded-xl">
-                  <h4 className="font-semibold text-emerald-400 mb-2">Frontend Layer</h4>
-                  <p className="text-sm text-gray-300">Next.js 15 (App Router), React 19, TypeScript, Tailwind CSS 4</p>
-                </div>
-                <div className="p-4 bg-white/5 rounded-xl">
-                  <h4 className="font-semibold text-emerald-400 mb-2">Backend Layer</h4>
-                  <p className="text-sm text-gray-300">Next.js API Routes, Edge Functions, NextAuth.js</p>
-                </div>
-                <div className="p-4 bg-white/5 rounded-xl">
-                  <h4 className="font-semibold text-emerald-400 mb-2">Data Layer</h4>
-                  <p className="text-sm text-gray-300">Contentstack CMS, NeonDB PostgreSQL, Algolia Search</p>
-                </div>
-                <div className="p-4 bg-white/5 rounded-xl">
-                  <h4 className="font-semibold text-emerald-400 mb-2">Infrastructure</h4>
-                  <p className="text-sm text-gray-300">Contentstack Launch (Edge hosting), Global CDN</p>
-                </div>
-              </div>
-            </div>
-
-            {/* Database Schema */}
-            <div className="bg-white/5 backdrop-blur border border-white/10 rounded-2xl p-8">
-              <div className="flex items-center gap-3 mb-6">
-                <div className="p-3 bg-blue-500/20 rounded-xl">
-                  <Database className="w-6 h-6 text-blue-400" />
-                </div>
-                <h3 className="text-xl font-bold">Database Schema (NeonDB)</h3>
-              </div>
-              <div className="space-y-3 font-mono text-sm">
-                <div className="p-3 bg-black/30 rounded-lg">
-                  <p className="text-blue-400 mb-1">-- users table</p>
-                  <p className="text-gray-300">id, email, password_hash, first_name, last_name, auth_provider, created_at</p>
-                </div>
-                <div className="p-3 bg-black/30 rounded-lg">
-                  <p className="text-blue-400 mb-1">-- user_skills table</p>
-                  <p className="text-gray-300">id, email, skill, created_at</p>
-                </div>
-                <div className="p-3 bg-black/30 rounded-lg">
-                  <p className="text-blue-400 mb-1">-- applications table</p>
-                  <p className="text-gray-300">id, user_email, job_id, status, cover_letter, resume_url, created_at</p>
-                </div>
-              </div>
-            </div>
-
-            {/* Content Types */}
-            <div className="bg-white/5 backdrop-blur border border-white/10 rounded-2xl p-8">
-              <div className="flex items-center gap-3 mb-6">
-                <div className="p-3 bg-purple-500/20 rounded-xl">
-                  <Layers className="w-6 h-6 text-purple-400" />
-                </div>
-                <h3 className="text-xl font-bold">Contentstack Content Types</h3>
-              </div>
-              <div className="grid grid-cols-2 gap-3">
-                {[
-                  { name: "Job", fields: "12 fields" },
-                  { name: "Company", fields: "10 fields" },
-                  { name: "Blog Post", fields: "9 fields" },
-                  { name: "Homepage", fields: "6 fields" },
-                  { name: "Navigation", fields: "3 fields" },
-                  { name: "Notification", fields: "8 fields" },
-                  { name: "Personalized Banner", fields: "7 fields" },
-                  { name: "Learning Resource", fields: "14 fields" },
-                ].map((ct, index) => (
-                  <div key={index} className="p-3 bg-white/5 rounded-lg flex justify-between items-center">
-                    <span className="text-white font-medium">{ct.name}</span>
-                    <span className="text-xs text-purple-400">{ct.fields}</span>
-                  </div>
-                ))}
-              </div>
-            </div>
-
-            {/* Integration Points */}
-            <div className="bg-white/5 backdrop-blur border border-white/10 rounded-2xl p-8">
-              <div className="flex items-center gap-3 mb-6">
-                <div className="p-3 bg-orange-500/20 rounded-xl">
-                  <Workflow className="w-6 h-6 text-orange-400" />
-                </div>
-                <h3 className="text-xl font-bold">Integration Points</h3>
-              </div>
-              <div className="space-y-3">
-                {[
-                  { name: "Algolia", type: "Search", flow: "CMS → Automate → Algolia Index" },
-                  { name: "Lytics", type: "Analytics", flow: "Browser → jstag → Lytics → Personalize" },
-                  { name: "NextAuth", type: "Auth", flow: "Frontend → API → NeonDB/Google" },
-                  { name: "Automate", type: "Email", flow: "Webhook → Automate → Email Provider" },
-                  { name: "Launch", type: "Hosting", flow: "Git Push → Build → CDN Deploy" },
-                ].map((int, index) => (
-                  <div key={index} className="p-3 bg-white/5 rounded-lg">
-                    <div className="flex justify-between items-center mb-1">
-                      <span className="font-semibold text-white">{int.name}</span>
-                      <span className="text-xs px-2 py-1 bg-orange-500/20 text-orange-400 rounded">{int.type}</span>
-                    </div>
-                    <p className="text-xs text-gray-400 font-mono">{int.flow}</p>
-                  </div>
-                ))}
-              </div>
-            </div>
-          </div>
-
-          {/* Security & Performance */}
-          <div className="mt-8 grid md:grid-cols-2 gap-8">
-            <div className="bg-white/5 backdrop-blur border border-white/10 rounded-2xl p-8">
-              <div className="flex items-center gap-3 mb-6">
-                <div className="p-3 bg-red-500/20 rounded-xl">
-                  <Shield className="w-6 h-6 text-red-400" />
-                </div>
-                <h3 className="text-xl font-bold">Security Requirements</h3>
-              </div>
-              <div className="space-y-3">
-                <div className="flex items-center gap-3">
-                  <CheckCircle2 className="w-5 h-5 text-green-400" />
-                  <span className="text-gray-300">Password hashing with bcrypt (cost factor 12)</span>
-                </div>
-                <div className="flex items-center gap-3">
-                  <CheckCircle2 className="w-5 h-5 text-green-400" />
-                  <span className="text-gray-300">JWT session tokens with NextAuth.js</span>
-                </div>
-                <div className="flex items-center gap-3">
-                  <CheckCircle2 className="w-5 h-5 text-green-400" />
-                  <span className="text-gray-300">Admin panel protected by Edge middleware</span>
-                </div>
-                <div className="flex items-center gap-3">
-                  <CheckCircle2 className="w-5 h-5 text-green-400" />
-                  <span className="text-gray-300">Webhook secret verification for all webhooks</span>
-                </div>
-                <div className="flex items-center gap-3">
-                  <CheckCircle2 className="w-5 h-5 text-green-400" />
-                  <span className="text-gray-300">SSL/TLS encryption on all endpoints</span>
-                </div>
-              </div>
-            </div>
-
-            <div className="bg-white/5 backdrop-blur border border-white/10 rounded-2xl p-8">
-              <div className="flex items-center gap-3 mb-6">
-                <div className="p-3 bg-yellow-500/20 rounded-xl">
-                  <Zap className="w-6 h-6 text-yellow-400" />
-                </div>
-                <h3 className="text-xl font-bold">Performance Requirements</h3>
-              </div>
-              <div className="space-y-3">
-                <div className="flex items-center justify-between p-3 bg-white/5 rounded-lg">
-                  <span className="text-gray-300">Page Load Time</span>
-                  <span className="text-yellow-400 font-mono">&lt; 2 seconds</span>
-                </div>
-                <div className="flex items-center justify-between p-3 bg-white/5 rounded-lg">
-                  <span className="text-gray-300">Search Response</span>
-                  <span className="text-yellow-400 font-mono">&lt; 100ms</span>
-                </div>
-                <div className="flex items-center justify-between p-3 bg-white/5 rounded-lg">
-                  <span className="text-gray-300">API Response</span>
-                  <span className="text-yellow-400 font-mono">&lt; 500ms</span>
-                </div>
-                <div className="flex items-center justify-between p-3 bg-white/5 rounded-lg">
-                  <span className="text-gray-300">Uptime SLA</span>
-                  <span className="text-yellow-400 font-mono">&gt; 99.9%</span>
-                </div>
-                <div className="flex items-center justify-between p-3 bg-white/5 rounded-lg">
-                  <span className="text-gray-300">Lighthouse Score</span>
-                  <span className="text-yellow-400 font-mono">&gt; 90</span>
-                </div>
-              </div>
-            </div>
           </div>
         </div>
       </section>

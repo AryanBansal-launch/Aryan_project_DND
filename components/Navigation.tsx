@@ -17,7 +17,6 @@ import {
   UserPlus,
   FileText,
   LogOut,
-  Settings,
   BookOpen,
   GraduationCap,
   Compass,
@@ -41,7 +40,6 @@ const iconMap: { [key: string]: any } = {
   LogIn,
   UserPlus,
   LogOut,
-  Settings,
   BookOpen,
   GraduationCap
 };
@@ -189,20 +187,20 @@ export default function Navigation({ navigationData }: NavigationProps) {
                         Profile
                       </Link>
                       <Link
-                        href="/settings"
-                        className="flex items-center px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
-                        onClick={() => setIsUserMenuOpen(false)}
-                      >
-                        <Settings className="w-4 h-4 mr-3" />
-                        Settings
-                      </Link>
-                      <Link
                         href="/demo"
                         className="flex items-center px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
                         onClick={() => setIsUserMenuOpen(false)}
                       >
                         <Play className="w-4 h-4 mr-3" />
                         Demo
+                      </Link>
+                      <Link
+                        href="/docs"
+                        className="flex items-center px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
+                        onClick={() => setIsUserMenuOpen(false)}
+                      >
+                        <FileText className="w-4 h-4 mr-3" />
+                        Documentation
                       </Link>
                       <Link
                         href="/overview"
