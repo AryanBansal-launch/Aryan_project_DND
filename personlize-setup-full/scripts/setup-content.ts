@@ -9,7 +9,7 @@
  */
 
 import * as contentstack from '@contentstack/management';
-import Contentstack from '@contentstack/delivery-sdk';
+import Contentstack, { Region } from '@contentstack/delivery-sdk';
 import * as dotenv from 'dotenv';
 import * as path from 'path';
 
@@ -28,6 +28,30 @@ const MANAGEMENT_TOKEN = process.env.NEXT_PUBLIC_CONTENTSTACK_MANAGEMENT_TOKEN |
 const DELIVERY_TOKEN = process.env.CONTENTSTACK_DELIVERY_TOKEN || process.env.NEXT_PUBLIC_CONTENTSTACK_DELIVERY_TOKEN || '';
 const ENVIRONMENT = process.env.CONTENTSTACK_ENVIRONMENT || process.env.NEXT_PUBLIC_CONTENTSTACK_ENVIRONMENT || '';
 const REGION = process.env.CONTENTSTACK_REGION || process.env.NEXT_PUBLIC_CONTENTSTACK_REGION || 'aws-na';
+
+/** Map env region string to Delivery SDK Region enum (aws-na → US). */
+function getDeliveryRegion(region: string): Region {
+  const r = region.toLowerCase();
+  switch (r) {
+    case 'us':
+    case 'aws-na':
+      return Region.US;
+    case 'eu':
+      return Region.EU;
+    case 'au':
+      return Region.AU;
+    case 'azure-na':
+      return Region.AZURE_NA;
+    case 'azure-eu':
+      return Region.AZURE_EU;
+    case 'gcp-na':
+      return Region.GCP_NA;
+    case 'gcp-eu':
+      return Region.GCP_EU;
+    default:
+      return Region.US;
+  }
+}
 
 // Content Type Configuration
 const CONTENT_TYPE_UID = 'personalized_banner';
@@ -204,7 +228,7 @@ async function verifyEntries(): Promise<void> {
       apiKey: API_KEY,
       deliveryToken: DELIVERY_TOKEN,
       environment: ENVIRONMENT,
-      region: REGION as 'us' | 'eu' | 'azure-na' | 'azure-eu',
+      region: getDeliveryRegion(REGION),
     });
 
     console.log('✅ Delivery API configured successfully');
