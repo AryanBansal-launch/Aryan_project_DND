@@ -23,17 +23,17 @@ const endpoints = getContentstackEndpoints(region, true)
 // This improves performance by reusing TCP connections across multiple requests
 const httpAgent = new http.Agent({
   keepAlive: true,
-  keepAliveMsecs: 1000, // Send keep-alive probes every 1 second
+  keepAliveMsecs: 180000, // Send keep-alive probes every 1 second
   maxSockets: 50, // Maximum number of sockets to allow per host
-  maxFreeSockets: 10, // Maximum number of sockets to leave open in a free state
+  maxFreeSockets: 20, // Maximum number of sockets to leave open in a free state
   timeout: 60000, // Socket timeout in milliseconds
 });
 
 const httpsAgent = new https.Agent({
   keepAlive: true,
-  keepAliveMsecs: 1000,
+  keepAliveMsecs: 180000,
   maxSockets: 50,
-  maxFreeSockets: 10,
+  maxFreeSockets: 20,
   timeout: 60000,
 });
 
