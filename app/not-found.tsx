@@ -1,14 +1,13 @@
-"use client";
-
 import Link from "next/link";
 import { 
   Home, 
   Search, 
   Briefcase,
-  ArrowLeft,
   AlertCircle
 } from "lucide-react";
+import BackButton from "@/components/BackButton";
 
+export const dynamic = 'force-dynamic';
 export default function NotFound() {
   return (
     <div className="min-h-screen bg-gray-50 flex items-center justify-center px-4 sm:px-6 lg:px-8">
@@ -57,13 +56,7 @@ export default function NotFound() {
 
         {/* Back Button */}
         <div className="flex justify-center">
-          <button
-            onClick={() => window.history.back()}
-            className="inline-flex items-center px-6 py-3 border border-gray-300 rounded-md shadow-sm text-base font-medium text-gray-700 bg-white hover:bg-gray-50 transition-colors"
-          >
-            <ArrowLeft className="w-5 h-5 mr-2" />
-            Go Back
-          </button>
+          <BackButton />
         </div>
       </div>
     </div>
