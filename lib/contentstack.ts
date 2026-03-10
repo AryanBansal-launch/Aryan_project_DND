@@ -269,11 +269,7 @@ export async function getJobs() {
             }
           } catch (error: any) {
             // Log error but don't fail the entire job
-            if (error.message !== 'Request timeout') {
-              console.error(`Failed to fetch company ${companyUid}:`, error.message || error);
-            } else {
-              console.error(`Timeout fetching company ${companyUid}`);
-            }
+            console.error(`Failed to fetch company ${companyUid}:`, error);
             // Create placeholder company on error
             job.company = [createPlaceholderCompany(job, companyUid)];
           }
