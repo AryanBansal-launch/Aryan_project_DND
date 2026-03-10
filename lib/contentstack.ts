@@ -120,9 +120,6 @@ export function initLivePreview() {
 }
 // Function to fetch page data based on the URL
 export async function getPage(url: string) {
-  console.log(`[TRACE] getPage called - url: ${url} - ${new Date().toISOString()}`);
-  const startTime = Date.now();
-  
   try {
     const result = await stack
       .contentType("page") // Specifying the content type as "page"
@@ -130,8 +127,6 @@ export async function getPage(url: string) {
       .query() // Creating a query
       .where("url", QueryOperation.EQUALS, url) // Filtering entries by URL
       .find<Page>(); // Executing the query and expecting a result of type Page
-
-    console.log(`[TRACE] getPage completed - ${Date.now() - startTime}ms`);
 
     if (result.entries) {
       const entry = result.entries[0]; // Getting the first entry from the result
@@ -143,24 +138,19 @@ export async function getPage(url: string) {
       return entry; // Returning the fetched entry
     }
   } catch (error) {
-    console.error(`[TRACE] getPage failed - ${Date.now() - startTime}ms`, error);
+    console.error('Error fetching page:', error);
     throw error;
   }
 }
 
 // Function to fetch all companies
 export async function getCompanies() {
-  console.log(`[TRACE] getCompanies called - ${new Date().toISOString()}`);
-  const startTime = Date.now();
-  
   try {
     const result = await stack
       .contentType("company") // Specifying the content type as "company"
       .entry() // Accessing the entry
       .query() // Creating a query
       .find(); // Executing the query
-
-    console.log(`[TRACE] getCompanies completed - ${Date.now() - startTime}ms - entries: ${result.entries?.length || 0}`);
 
     if (result.entries) {
       if (process.env.NEXT_PUBLIC_CONTENTSTACK_PREVIEW === 'true') {
@@ -174,23 +164,18 @@ export async function getCompanies() {
 
     return [];
   } catch (error) {
-    console.error(`[TRACE] getCompanies failed - ${Date.now() - startTime}ms`, error);
+    console.error('Error fetching companies:', error);
     throw error;
   }
 }
 
 // Function to fetch a single company by UID
 export async function getCompanyByUid(uid: string) {
-  console.log(`[TRACE] getCompanyByUid called - uid: ${uid} - ${new Date().toISOString()}`);
-  const startTime = Date.now();
-  
   try {
     const result = await stack
       .contentType("company") // Specifying the content type as "company"
       .entry(uid) // Accessing specific entry by UID
       .fetch(); // Fetching the entry
-
-    console.log(`[TRACE] getCompanyByUid completed - uid: ${uid} - ${Date.now() - startTime}ms`);
 
     if (result) {
       if (process.env.NEXT_PUBLIC_CONTENTSTACK_PREVIEW === 'true') {
@@ -202,7 +187,7 @@ export async function getCompanyByUid(uid: string) {
 
     return null;
   } catch (error) {
-    console.error(`[TRACE] getCompanyByUid failed - uid: ${uid} - ${Date.now() - startTime}ms`, error);
+    console.error('Error fetching company:', error);
     throw error;
   }
 }
@@ -223,17 +208,12 @@ function createPlaceholderCompany(job: any, companyUid: string | null) {
 
 // Function to fetch all jobs
 export async function getJobs() {
-  console.log(`[TRACE] getJobs called - ${new Date().toISOString()}`);
-  const startTime = Date.now();
-  
   try {
     const result = await stack
       .contentType("job") // Specifying the content type as "job"
       .entry() // Accessing the entry
       .query() // Creating a query
       .find(); // Executing the query
-
-    console.log(`[TRACE] getJobs initial fetch completed - ${Date.now() - startTime}ms - entries: ${result.entries?.length || 0}`);
 
     if (result.entries) {
       const entries = result.entries;
@@ -246,9 +226,6 @@ export async function getJobs() {
 
     // Fetch company details for each job
     // Use Promise.allSettled to handle failures gracefully
-    console.log(`[TRACE] getJobs - starting company fetch for ${entries.length} jobs`);
-    const companyFetchStart = Date.now();
-    
     const jobsWithCompanyResults = await Promise.allSettled(
       entries.map(async (job: any) => {
         let companyUid: string | null = null;
@@ -330,31 +307,23 @@ export async function getJobs() {
       }
     });
 
-    console.log(`[TRACE] getJobs - company fetch completed - ${Date.now() - companyFetchStart}ms`);
-    console.log(`[TRACE] getJobs total completed - ${Date.now() - startTime}ms`);
-
     return jobsWithCompany; // Returning all job entries with company data
   }
 
   return [];
   } catch (error) {
-    console.error(`[TRACE] getJobs failed - ${Date.now() - startTime}ms`, error);
+    console.error('Error fetching jobs:', error);
     throw error;
   }
 }
 
 // Function to fetch a single job by UID
 export async function getJobByUid(uid: string) {
-  console.log(`[TRACE] getJobByUid called - uid: ${uid} - ${new Date().toISOString()}`);
-  const startTime = Date.now();
-  
   try {
     const result = await stack
       .contentType("job") // Specifying the content type as "job"
       .entry(uid) // Accessing specific entry by UID
       .fetch(); // Fetching the entry
-
-    console.log(`[TRACE] getJobByUid fetch completed - uid: ${uid} - ${Date.now() - startTime}ms`);
 
     if (result) {
       if (process.env.NEXT_PUBLIC_CONTENTSTACK_PREVIEW === 'true') {
@@ -417,30 +386,24 @@ export async function getJobByUid(uid: string) {
       job.company = [createPlaceholderCompany(job, null)];
     }
 
-    console.log(`[TRACE] getJobByUid total completed - uid: ${uid} - ${Date.now() - startTime}ms`);
     return result; // Returning the fetched job
   }
 
   return null;
   } catch (error) {
-    console.error(`[TRACE] getJobByUid failed - uid: ${uid} - ${Date.now() - startTime}ms`, error);
+    console.error('Error fetching job:', error);
     throw error;
   }
 }
 
 // Function to fetch homepage content (singleton)
 export async function getHomepage() {
-  console.log(`[TRACE] getHomepage called - ${new Date().toISOString()}`);
-  const startTime = Date.now();
-  
   try {
     const result = await stack
       .contentType("homepage")
       .entry()
       .query()
       .find();
-
-    console.log(`[TRACE] getHomepage completed - ${Date.now() - startTime}ms`);
 
     if (result.entries && result.entries.length > 0) {
       const entry = result.entries[0];
@@ -454,24 +417,19 @@ export async function getHomepage() {
 
     return null;
   } catch (error) {
-    console.error(`[TRACE] getHomepage failed - ${Date.now() - startTime}ms`, error);
+    console.error('Error fetching homepage:', error);
     throw error;
   }
 }
 
 // Function to fetch navigation content (singleton)
 export async function getNavigation() {
-  console.log(`[TRACE] getNavigation called - ${new Date().toISOString()}`);
-  const startTime = Date.now();
-  
   try {
     const result = await stack
       .contentType("navigation")
       .entry()
       .query()
       .find();
-
-    console.log(`[TRACE] getNavigation completed - ${Date.now() - startTime}ms`);
 
     if (result.entries && result.entries.length > 0) {
       const entry = result.entries[0];
@@ -485,16 +443,13 @@ export async function getNavigation() {
 
     return null;
   } catch (error) {
-    console.error(`[TRACE] getNavigation failed - ${Date.now() - startTime}ms`, error);
+    console.error('Error fetching navigation:', error);
     throw error;
   }
 }
 
 // Function to fetch all blog posts
 export async function getBlogs(locale?: string) {
-  console.log(`[TRACE] getBlogs called - locale: ${locale || 'default'} - ${new Date().toISOString()}`);
-  const startTime = Date.now();
-  
   try {
     // Create a stack instance with locale if provided
     const stackInstance = locale 
@@ -515,8 +470,6 @@ export async function getBlogs(locale?: string) {
       .query()
       .find();
 
-    console.log(`[TRACE] getBlogs completed - ${Date.now() - startTime}ms - entries: ${result.entries?.length || 0}`);
-
     if (result.entries) {
       if (process.env.NEXT_PUBLIC_CONTENTSTACK_PREVIEW === 'true') {
         result.entries.forEach((entry: any) => {
@@ -529,16 +482,13 @@ export async function getBlogs(locale?: string) {
 
     return [];
   } catch (error) {
-    console.error(`[TRACE] getBlogs failed - ${Date.now() - startTime}ms`, error);
+    console.error('Error fetching blogs:', error);
     throw error;
   }
 }
 
 // Function to fetch a single blog post by UID
 export async function getBlogByUid(uid: string, locale?: string) {
-  console.log(`[TRACE] getBlogByUid called - uid: ${uid}, locale: ${locale || 'default'} - ${new Date().toISOString()}`);
-  const startTime = Date.now();
-  
   try {
     // Create a stack instance with locale if provided
     const stackInstance = locale 
@@ -558,8 +508,6 @@ export async function getBlogByUid(uid: string, locale?: string) {
       .entry(uid)
       .fetch();
 
-    console.log(`[TRACE] getBlogByUid completed - uid: ${uid} - ${Date.now() - startTime}ms`);
-
     if (result) {
       if (process.env.NEXT_PUBLIC_CONTENTSTACK_PREVIEW === 'true') {
         contentstack.Utils.addEditableTags(result as any, 'blog_post', true);
@@ -570,16 +518,13 @@ export async function getBlogByUid(uid: string, locale?: string) {
 
     return null;
   } catch (error) {
-    console.error(`[TRACE] getBlogByUid failed - uid: ${uid} - ${Date.now() - startTime}ms`, error);
+    console.error('Error fetching blog:', error);
     throw error;
   }
 }
 
 // Function to fetch a blog post by slug
 export async function getBlogBySlug(slug: string) {
-  console.log(`[TRACE] getBlogBySlug called - slug: ${slug} - ${new Date().toISOString()}`);
-  const startTime = Date.now();
-  
   try {
     const result = await stack
       .contentType("blog_post")
@@ -587,8 +532,6 @@ export async function getBlogBySlug(slug: string) {
       .query()
       .where("slug", QueryOperation.EQUALS, slug)
       .find();
-
-    console.log(`[TRACE] getBlogBySlug completed - slug: ${slug} - ${Date.now() - startTime}ms`);
 
     if (result.entries && result.entries.length > 0) {
       const entry = result.entries[0];
@@ -602,7 +545,7 @@ export async function getBlogBySlug(slug: string) {
 
     return null;
   } catch (error) {
-    console.error(`[TRACE] getBlogBySlug failed - slug: ${slug} - ${Date.now() - startTime}ms`, error);
+    console.error('Error fetching blog by slug:', error);
     throw error;
   }
 }
@@ -632,9 +575,6 @@ export async function getPersonalizedBanner(
   userContext?: PersonalizationContext,
   locale?: string
 ) {
-  console.log(`[TRACE] getPersonalizedBanner called - locale: ${locale || 'default'}, segment: ${userContext?.userSegment || 'none'} - ${new Date().toISOString()}`);
-  const startTime = Date.now();
-  
   try {
     // Create a stack instance with locale if provided
     const stackInstance = locale 
@@ -693,8 +633,6 @@ export async function getPersonalizedBanner(
 
   const result = await query.find();
 
-  console.log(`[TRACE] getPersonalizedBanner completed - ${Date.now() - startTime}ms - entries: ${result.entries?.length || 0}`);
-
   if (result.entries && result.entries.length > 0) {
     // If multiple entries, prioritize by priority field or return first
     let entry = result.entries[0];
@@ -718,7 +656,7 @@ export async function getPersonalizedBanner(
 
   return null;
   } catch (error) {
-    console.error(`[TRACE] getPersonalizedBanner failed - ${Date.now() - startTime}ms`, error);
+    console.error('Error fetching personalized banner:', error);
     throw error;
   }
 }
@@ -761,9 +699,6 @@ export async function getLearningResources(options?: {
   featured?: boolean;
   limit?: number;
 }) {
-  console.log(`[TRACE] getLearningResources called - options: ${JSON.stringify(options)} - ${new Date().toISOString()}`);
-  const startTime = Date.now();
-  
   try {
     let query = stack
       .contentType("learning_resource")
@@ -784,8 +719,6 @@ export async function getLearningResources(options?: {
     }
 
     const result = await query.find();
-    
-    console.log(`[TRACE] getLearningResources completed - ${Date.now() - startTime}ms - entries: ${result.entries?.length || 0}`);
 
     if (result.entries) {
       let entries = result.entries as ContentstackLearningResource[];
@@ -814,7 +747,6 @@ export async function getLearningResources(options?: {
 
     return [];
   } catch (error) {
-    console.error(`[TRACE] getLearningResources failed - ${Date.now() - startTime}ms`, error);
     console.warn('Learning resources not available:', error);
     return [];
   }
@@ -824,9 +756,6 @@ export async function getLearningResources(options?: {
  * Fetch a single learning resource by slug
  */
 export async function getLearningResourceBySlug(slug: string) {
-  console.log(`[TRACE] getLearningResourceBySlug called - slug: ${slug} - ${new Date().toISOString()}`);
-  const startTime = Date.now();
-  
   try {
     const result = await stack
       .contentType("learning_resource")
@@ -834,8 +763,6 @@ export async function getLearningResourceBySlug(slug: string) {
       .query()
       .where("slug", QueryOperation.EQUALS, slug)
       .find();
-
-    console.log(`[TRACE] getLearningResourceBySlug completed - slug: ${slug} - ${Date.now() - startTime}ms`);
 
     if (result.entries && result.entries.length > 0) {
       const entry = result.entries[0] as ContentstackLearningResource;
@@ -849,7 +776,6 @@ export async function getLearningResourceBySlug(slug: string) {
 
     return null;
   } catch (error) {
-    console.error(`[TRACE] getLearningResourceBySlug failed - slug: ${slug} - ${Date.now() - startTime}ms`, error);
     console.warn('Learning resource not found:', error);
     return null;
   }
@@ -859,16 +785,11 @@ export async function getLearningResourceBySlug(slug: string) {
  * Get all unique technologies from learning resources
  */
 export async function getLearningTechnologies() {
-  console.log(`[TRACE] getLearningTechnologies called - ${new Date().toISOString()}`);
-  const startTime = Date.now();
-  
   try {
     const resources = await getLearningResources();
     const technologies = [...new Set(resources.map(r => r.technology))];
-    console.log(`[TRACE] getLearningTechnologies completed - ${Date.now() - startTime}ms - technologies: ${technologies.length}`);
     return technologies.sort();
   } catch (error) {
-    console.error(`[TRACE] getLearningTechnologies failed - ${Date.now() - startTime}ms`, error);
     console.warn('Could not fetch technologies:', error);
     return [];
   }
@@ -883,17 +804,12 @@ export async function getLearningTechnologies() {
  * This fetches a demo video entry from Contentstack that can be displayed on /demo route
  */
 export async function getDemoVideo() {
-  console.log(`[TRACE] getDemoVideo called - ${new Date().toISOString()}`);
-  const startTime = Date.now();
-  
   try {
     const result = await stack
       .contentType("demo_video")
       .entry()
       .query()
       .find();
-
-    console.log(`[TRACE] getDemoVideo completed - ${Date.now() - startTime}ms`);
 
     if (result.entries && result.entries.length > 0) {
       const entry = result.entries[0];
@@ -907,7 +823,6 @@ export async function getDemoVideo() {
 
     return null;
   } catch (error) {
-    console.error(`[TRACE] getDemoVideo failed - ${Date.now() - startTime}ms`, error);
     console.warn('Demo video not available:', error);
     return null;
   }
