@@ -1,21 +1,13 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getServerSession } from 'next-auth/next';
 import { authOptions } from '@/lib/auth';
+import { 
+  getManagementApiUrl, 
+  getManagementApiHeaders, 
+  validateContentstackConfig,
+  getContentstackEnvironment 
+} from '@/lib/contentstack-config';
 
-// Contentstack Management API configuration
-const API_KEY = process.env.NEXT_PUBLIC_CONTENTSTACK_API_KEY;
-const MANAGEMENT_TOKEN = process.env.NEXT_PUBLIC_CONTENTSTACK_MANAGEMENT_TOKEN;
-const ENVIRONMENT = process.env.NEXT_PUBLIC_CONTENTSTACK_ENVIRONMENT;
-const REGION = process.env.NEXT_PUBLIC_CONTENTSTACK_REGION || 'us';
-
-// Base URL based on region
-const BASE_URLS: Record<string, string> = {
-  us: 'api.contentstack.io',
-  eu: 'eu-api.contentstack.com',
-  'azure-na': 'azure-na-api.contentstack.com'
-};
-
-const BASE_URL = BASE_URLS[REGION] || BASE_URLS.us;
 const CONTENT_TYPE_UID = 'job';
 
 interface JobFormData {
@@ -98,15 +90,11 @@ async function createJobEntry(jobData: JobFormData): Promise<any> {
     entry: entryData
   });
 
-  const url = `https://${BASE_URL}/v3/content_types/${CONTENT_TYPE_UID}/entries`;
+  const url = getManagementApiUrl(`/v3/content_types/${CONTENT_TYPE_UID}/entries`);
   
   const response = await fetch(url, {
     method: 'POST',
-    headers: {
-      'api_key': API_KEY!,
-      'authorization': MANAGEMENT_TOKEN!,
-      'Content-Type': 'application/json',
-    },
+    headers: getManagementApiHeaders(),
     body: postData,
   });
 
@@ -122,7 +110,7 @@ async function createJobEntry(jobData: JobFormData): Promise<any> {
 async function publishJobEntry(entryUid: string): Promise<any> {
   const postData = JSON.stringify({
     entry: {
-      environments: [ENVIRONMENT],
+      environments: [getContentstackEnvironment()],
       locales: ['en-us']
     },
     rules: {
@@ -132,15 +120,11 @@ async function publishJobEntry(entryUid: string): Promise<any> {
     publish_with_reference: true
   });
 
-  const url = `https://${BASE_URL}/v3/content_types/${CONTENT_TYPE_UID}/entries/${entryUid}/publish`;
+  const url = getManagementApiUrl(`/v3/content_types/${CONTENT_TYPE_UID}/entries/${entryUid}/publish`);
   
   const response = await fetch(url, {
     method: 'POST',
-    headers: {
-      'api_key': API_KEY!,
-      'authorization': MANAGEMENT_TOKEN!,
-      'Content-Type': 'application/json',
-    },
+    headers: getManagementApiHeaders(),
     body: postData,
   });
 
@@ -165,9 +149,11 @@ export async function POST(request: NextRequest) {
     }
 
     // Validate environment variables
-    if (!API_KEY || !MANAGEMENT_TOKEN || !ENVIRONMENT) {
+    try {
+      validateContentstackConfig();
+    } catch (error: any) {
       return NextResponse.json(
-        { error: 'Contentstack configuration missing' },
+        { error: error.message || 'Contentstack configuration missing' },
         { status: 500 }
       );
     }

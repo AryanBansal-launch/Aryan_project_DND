@@ -2,16 +2,11 @@
 import { Notification, ContentstackNotification } from "./types";
 import { stack } from "./contentstack";
 import { QueryOperation } from "@contentstack/delivery-sdk";
-
-const getManagementApiBaseUrl = () => {
-  const region = process.env.NEXT_PUBLIC_CONTENTSTACK_REGION || 'us';
-  const baseUrls: { [key: string]: string } = {
-    us: 'api.contentstack.io',
-    eu: 'eu-api.contentstack.com',
-    'azure-na': 'azure-na-api.contentstack.com'
-  };
-  return baseUrls[region] || baseUrls.us;
-};
+import { 
+  getManagementApiUrl, 
+  getManagementApiHeaders, 
+  getContentstackEnvironment 
+} from "./contentstack-config";
 
 // Create a notification entry in Contentstack
 export async function createNotificationInContentstack(
@@ -22,16 +17,6 @@ export async function createNotificationInContentstack(
   metadata?: Record<string, any>
 ): Promise<string | null> {
   try {
-    const apiKey = process.env.NEXT_PUBLIC_CONTENTSTACK_API_KEY;
-    const managementToken = process.env.NEXT_PUBLIC_CONTENTSTACK_MANAGEMENT_TOKEN;
-    const environment = process.env.NEXT_PUBLIC_CONTENTSTACK_ENVIRONMENT;
-
-    if (!apiKey || !managementToken || !environment) {
-      console.error('Missing Contentstack configuration for notifications');
-      return null;
-    }
-
-    const baseUrl = getManagementApiBaseUrl();
     const entryData = {
       user_email: userEmail,
       type: type,
@@ -42,15 +27,11 @@ export async function createNotificationInContentstack(
     };
 
     const postData = JSON.stringify({ entry: entryData });
-    const url = `https://${baseUrl}/v3/content_types/notification/entries`;
+    const url = getManagementApiUrl('/v3/content_types/notification/entries');
 
     const response = await fetch(url, {
       method: 'POST',
-      headers: {
-        'api_key': apiKey,
-        'authorization': managementToken,
-        'Content-Type': 'application/json',
-      },
+      headers: getManagementApiHeaders(),
       body: postData,
     });
 
@@ -65,17 +46,13 @@ export async function createNotificationInContentstack(
 
     if (entryUid) {
       // Publish the entry
-      const publishUrl = `https://${baseUrl}/v3/content_types/notification/entries/${entryUid}/publish`;
+      const publishUrl = getManagementApiUrl(`/v3/content_types/notification/entries/${entryUid}/publish`);
       const publishResponse = await fetch(publishUrl, {
         method: 'POST',
-        headers: {
-          'api_key': apiKey,
-          'authorization': managementToken,
-          'Content-Type': 'application/json',
-        },
+        headers: getManagementApiHeaders(),
         body: JSON.stringify({
           entry: {
-            environments: [environment],
+            environments: [getContentstackEnvironment()],
             locales: ['en-us']
           }
         }),
@@ -186,24 +163,11 @@ export async function getUnreadNotificationCountFromContentstack(
 // Delete a notification from Contentstack
 export async function deleteNotificationFromContentstack(notificationUid: string): Promise<boolean> {
   try {
-    const apiKey = process.env.NEXT_PUBLIC_CONTENTSTACK_API_KEY;
-    const managementToken = process.env.NEXT_PUBLIC_CONTENTSTACK_MANAGEMENT_TOKEN;
-
-    if (!apiKey || !managementToken) {
-      console.error('Missing Contentstack configuration for deleting notifications');
-      return false;
-    }
-
-    const baseUrl = getManagementApiBaseUrl();
-    const url = `https://${baseUrl}/v3/content_types/notification/entries/${notificationUid}`;
+    const url = getManagementApiUrl(`/v3/content_types/notification/entries/${notificationUid}`);
 
     const response = await fetch(url, {
       method: 'DELETE',
-      headers: {
-        'api_key': apiKey,
-        'authorization': managementToken,
-        'Content-Type': 'application/json',
-      },
+      headers: getManagementApiHeaders(),
     });
 
     if (!response.ok) {
@@ -224,22 +188,10 @@ export async function markNotificationAsReadInContentstack(
   notificationUid: string
 ): Promise<boolean> {
   try {
-    const apiKey = process.env.NEXT_PUBLIC_CONTENTSTACK_API_KEY;
-    const managementToken = process.env.NEXT_PUBLIC_CONTENTSTACK_MANAGEMENT_TOKEN;
-    const environment = process.env.NEXT_PUBLIC_CONTENTSTACK_ENVIRONMENT;
-
-    if (!apiKey || !managementToken || !environment) {
-      console.error('Missing Contentstack configuration for updating notifications');
-      return false;
-    }
-
     // First, fetch the entry to get its current version
-    const getUrl = `https://${getManagementApiBaseUrl()}/v3/content_types/notification/entries/${notificationUid}`;
+    const getUrl = getManagementApiUrl(`/v3/content_types/notification/entries/${notificationUid}`);
     const getResponse = await fetch(getUrl, {
-      headers: {
-        'api_key': apiKey,
-        'authorization': managementToken,
-      },
+      headers: getManagementApiHeaders(),
     });
 
     if (!getResponse.ok) {
@@ -251,7 +203,7 @@ export async function markNotificationAsReadInContentstack(
     const entry = entryData.entry;
 
     // Update the entry
-    const updateUrl = `https://${getManagementApiBaseUrl()}/v3/content_types/notification/entries/${notificationUid}`;
+    const updateUrl = getManagementApiUrl(`/v3/content_types/notification/entries/${notificationUid}`);
     const updateData = {
       entry: {
         ...entry,
@@ -261,11 +213,7 @@ export async function markNotificationAsReadInContentstack(
 
     const updateResponse = await fetch(updateUrl, {
       method: 'PUT',
-      headers: {
-        'api_key': apiKey,
-        'authorization': managementToken,
-        'Content-Type': 'application/json',
-      },
+      headers: getManagementApiHeaders(),
       body: JSON.stringify(updateData),
     });
 
@@ -276,17 +224,13 @@ export async function markNotificationAsReadInContentstack(
     }
 
     // Publish the updated entry
-    const publishUrl = `https://${getManagementApiBaseUrl()}/v3/content_types/notification/entries/${notificationUid}/publish`;
+    const publishUrl = getManagementApiUrl(`/v3/content_types/notification/entries/${notificationUid}/publish`);
     await fetch(publishUrl, {
       method: 'POST',
-      headers: {
-        'api_key': apiKey,
-        'authorization': managementToken,
-        'Content-Type': 'application/json',
-      },
+      headers: getManagementApiHeaders(),
       body: JSON.stringify({
         entry: {
-          environments: [environment],
+          environments: [getContentstackEnvironment()],
           locales: ['en-us']
         }
       }),
