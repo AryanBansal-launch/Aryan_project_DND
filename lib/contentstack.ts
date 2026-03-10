@@ -7,6 +7,10 @@ import ContentstackLivePreview, { IStackSdk } from "@contentstack/live-preview-u
 // Importing the Page type definition 
 import { Page } from "./types";
 
+// Importing Node.js http and https modules for agent configuration
+import http from "http";
+import https from "https";
+
 // helper functions from private package to retrieve Contentstack endpoints in a convienient way
 import { getContentstackEndpoints, getRegionForString } from "@timbenniks/contentstack-endpoints";
 
@@ -14,6 +18,48 @@ import { getContentstackEndpoints, getRegionForString } from "@timbenniks/conten
 const region = getRegionForString(process.env.NEXT_PUBLIC_CONTENTSTACK_REGION as string)
 // object with all endpoints for region.
 const endpoints = getContentstackEndpoints(region, true)
+
+// Configure HTTP/HTTPS agents with keepAlive enabled for connection reuse
+// This improves performance by reusing TCP connections across multiple requests
+const httpAgent = new http.Agent({
+  keepAlive: true,
+  keepAliveMsecs: 1000, // Send keep-alive probes every 1 second
+  maxSockets: 50, // Maximum number of sockets to allow per host
+  maxFreeSockets: 10, // Maximum number of sockets to leave open in a free state
+  timeout: 60000, // Socket timeout in milliseconds
+});
+
+const httpsAgent = new https.Agent({
+  keepAlive: true,
+  keepAliveMsecs: 1000,
+  maxSockets: 50,
+  maxFreeSockets: 10,
+  timeout: 60000,
+});
+
+// Helper function to get HTTP client configuration with keepAlive agents and retry logic
+function getHttpClientConfig() {
+  return {
+    // Configure HTTP agent with keepAlive for connection pooling
+    httpAgent: httpAgent,
+    
+    // Configure HTTPS agent with keepAlive for connection pooling
+    httpsAgent: httpsAgent,
+    
+    // Retry configuration for failed requests
+    retryLimit: 5, // Number of retries before failing
+    retryDelay: 300, // Base delay in milliseconds between retries
+    retryCondition: (error: any) => {
+      // Retry on network errors, timeouts, rate limits, and server errors
+      return error && error.status && [408, 429, 500, 502, 503, 504].includes(error.status);
+    },
+    retryDelayOptions: {
+      base: 1000, // Base delay for exponential backoff (1st retry: 1000ms, 2nd: 2000ms, etc.)
+      customBackoff: () => 0, // Placeholder function, base will be used
+    },
+    timeout: 30000, // Request timeout in milliseconds
+  };
+}
 
 export const stack = contentstack.stack({
   // Setting the API key from environment variables
@@ -44,7 +90,10 @@ export const stack = contentstack.stack({
     // Setting the host for live preview based on the region
     // for internal testing purposes at Contentstack we look for a custom host in the env vars, you do not have to do this.
     host: process.env.NEXT_PUBLIC_CONTENTSTACK_PREVIEW_HOST || endpoints && endpoints.preview
-  }
+  },
+
+  // Configure HTTP agents with keepAlive for connection reuse and retry logic
+  ...getHttpClientConfig()
 });
 
 // Initialize live preview functionality
@@ -71,61 +120,91 @@ export function initLivePreview() {
 }
 // Function to fetch page data based on the URL
 export async function getPage(url: string) {
-  const result = await stack
-    .contentType("page") // Specifying the content type as "page"
-    .entry() // Accessing the entry
-    .query() // Creating a query
-    .where("url", QueryOperation.EQUALS, url) // Filtering entries by URL
-    .find<Page>(); // Executing the query and expecting a result of type Page
+  console.log(`[TRACE] getPage called - url: ${url} - ${new Date().toISOString()}`);
+  const startTime = Date.now();
+  
+  try {
+    const result = await stack
+      .contentType("page") // Specifying the content type as "page"
+      .entry() // Accessing the entry
+      .query() // Creating a query
+      .where("url", QueryOperation.EQUALS, url) // Filtering entries by URL
+      .find<Page>(); // Executing the query and expecting a result of type Page
 
-  if (result.entries) {
-    const entry = result.entries[0]; // Getting the first entry from the result
+    console.log(`[TRACE] getPage completed - ${Date.now() - startTime}ms`);
 
-    if (process.env.NEXT_PUBLIC_CONTENTSTACK_PREVIEW === 'true') {
-      contentstack.Utils.addEditableTags(entry, 'page', true); // Adding editable tags for live preview if enabled
+    if (result.entries) {
+      const entry = result.entries[0]; // Getting the first entry from the result
+
+      if (process.env.NEXT_PUBLIC_CONTENTSTACK_PREVIEW === 'true') {
+        contentstack.Utils.addEditableTags(entry, 'page', true); // Adding editable tags for live preview if enabled
+      }
+
+      return entry; // Returning the fetched entry
     }
-
-    return entry; // Returning the fetched entry
+  } catch (error) {
+    console.error(`[TRACE] getPage failed - ${Date.now() - startTime}ms`, error);
+    throw error;
   }
 }
 
 // Function to fetch all companies
 export async function getCompanies() {
-  const result = await stack
-    .contentType("company") // Specifying the content type as "company"
-    .entry() // Accessing the entry
-    .query() // Creating a query
-    .find(); // Executing the query
+  console.log(`[TRACE] getCompanies called - ${new Date().toISOString()}`);
+  const startTime = Date.now();
+  
+  try {
+    const result = await stack
+      .contentType("company") // Specifying the content type as "company"
+      .entry() // Accessing the entry
+      .query() // Creating a query
+      .find(); // Executing the query
 
-  if (result.entries) {
-    if (process.env.NEXT_PUBLIC_CONTENTSTACK_PREVIEW === 'true') {
-      result.entries.forEach(entry => {
-        contentstack.Utils.addEditableTags(entry as any, 'company', true); // Adding editable tags for live preview if enabled
-      });
+    console.log(`[TRACE] getCompanies completed - ${Date.now() - startTime}ms - entries: ${result.entries?.length || 0}`);
+
+    if (result.entries) {
+      if (process.env.NEXT_PUBLIC_CONTENTSTACK_PREVIEW === 'true') {
+        result.entries.forEach(entry => {
+          contentstack.Utils.addEditableTags(entry as any, 'company', true); // Adding editable tags for live preview if enabled
+        });
+      }
+
+      return result.entries; // Returning all company entries
     }
 
-    return result.entries; // Returning all company entries
+    return [];
+  } catch (error) {
+    console.error(`[TRACE] getCompanies failed - ${Date.now() - startTime}ms`, error);
+    throw error;
   }
-
-  return [];
 }
 
 // Function to fetch a single company by UID
 export async function getCompanyByUid(uid: string) {
-  const result = await stack
-    .contentType("company") // Specifying the content type as "company"
-    .entry(uid) // Accessing specific entry by UID
-    .fetch(); // Fetching the entry
+  console.log(`[TRACE] getCompanyByUid called - uid: ${uid} - ${new Date().toISOString()}`);
+  const startTime = Date.now();
+  
+  try {
+    const result = await stack
+      .contentType("company") // Specifying the content type as "company"
+      .entry(uid) // Accessing specific entry by UID
+      .fetch(); // Fetching the entry
 
-  if (result) {
-    if (process.env.NEXT_PUBLIC_CONTENTSTACK_PREVIEW === 'true') {
-      contentstack.Utils.addEditableTags(result as any, 'company', true); // Adding editable tags for live preview if enabled
+    console.log(`[TRACE] getCompanyByUid completed - uid: ${uid} - ${Date.now() - startTime}ms`);
+
+    if (result) {
+      if (process.env.NEXT_PUBLIC_CONTENTSTACK_PREVIEW === 'true') {
+        contentstack.Utils.addEditableTags(result as any, 'company', true); // Adding editable tags for live preview if enabled
+      }
+
+      return result; // Returning the fetched company
     }
 
-    return result; // Returning the fetched company
+    return null;
+  } catch (error) {
+    console.error(`[TRACE] getCompanyByUid failed - uid: ${uid} - ${Date.now() - startTime}ms`, error);
+    throw error;
   }
-
-  return null;
 }
 
 // Helper function to create placeholder company data
@@ -144,14 +223,20 @@ function createPlaceholderCompany(job: any, companyUid: string | null) {
 
 // Function to fetch all jobs
 export async function getJobs() {
-  const result = await stack
-    .contentType("job") // Specifying the content type as "job"
-    .entry() // Accessing the entry
-    .query() // Creating a query
-    .find(); // Executing the query
+  console.log(`[TRACE] getJobs called - ${new Date().toISOString()}`);
+  const startTime = Date.now();
+  
+  try {
+    const result = await stack
+      .contentType("job") // Specifying the content type as "job"
+      .entry() // Accessing the entry
+      .query() // Creating a query
+      .find(); // Executing the query
 
-  if (result.entries) {
-    const entries = result.entries;
+    console.log(`[TRACE] getJobs initial fetch completed - ${Date.now() - startTime}ms - entries: ${result.entries?.length || 0}`);
+
+    if (result.entries) {
+      const entries = result.entries;
     
     if (process.env.NEXT_PUBLIC_CONTENTSTACK_PREVIEW === 'true') {
       entries.forEach((entry: any) => {
@@ -161,6 +246,9 @@ export async function getJobs() {
 
     // Fetch company details for each job
     // Use Promise.allSettled to handle failures gracefully
+    console.log(`[TRACE] getJobs - starting company fetch for ${entries.length} jobs`);
+    const companyFetchStart = Date.now();
+    
     const jobsWithCompanyResults = await Promise.allSettled(
       entries.map(async (job: any) => {
         let companyUid: string | null = null;
@@ -242,26 +330,39 @@ export async function getJobs() {
       }
     });
 
+    console.log(`[TRACE] getJobs - company fetch completed - ${Date.now() - companyFetchStart}ms`);
+    console.log(`[TRACE] getJobs total completed - ${Date.now() - startTime}ms`);
+
     return jobsWithCompany; // Returning all job entries with company data
   }
 
   return [];
+  } catch (error) {
+    console.error(`[TRACE] getJobs failed - ${Date.now() - startTime}ms`, error);
+    throw error;
+  }
 }
 
 // Function to fetch a single job by UID
 export async function getJobByUid(uid: string) {
-  const result = await stack
-    .contentType("job") // Specifying the content type as "job"
-    .entry(uid) // Accessing specific entry by UID
-    .fetch(); // Fetching the entry
+  console.log(`[TRACE] getJobByUid called - uid: ${uid} - ${new Date().toISOString()}`);
+  const startTime = Date.now();
+  
+  try {
+    const result = await stack
+      .contentType("job") // Specifying the content type as "job"
+      .entry(uid) // Accessing specific entry by UID
+      .fetch(); // Fetching the entry
 
-  if (result) {
-    if (process.env.NEXT_PUBLIC_CONTENTSTACK_PREVIEW === 'true') {
-      contentstack.Utils.addEditableTags(result as any, 'job', true); // Adding editable tags for live preview if enabled
-    }
+    console.log(`[TRACE] getJobByUid fetch completed - uid: ${uid} - ${Date.now() - startTime}ms`);
 
-    // Fetch company details if present
-    const job = result as any;
+    if (result) {
+      if (process.env.NEXT_PUBLIC_CONTENTSTACK_PREVIEW === 'true') {
+        contentstack.Utils.addEditableTags(result as any, 'job', true); // Adding editable tags for live preview if enabled
+      }
+
+      // Fetch company details if present
+      const job = result as any;
     let companyUid: string | null = null;
     
     // Determine the company UID from different possible structures
@@ -316,137 +417,194 @@ export async function getJobByUid(uid: string) {
       job.company = [createPlaceholderCompany(job, null)];
     }
 
+    console.log(`[TRACE] getJobByUid total completed - uid: ${uid} - ${Date.now() - startTime}ms`);
     return result; // Returning the fetched job
   }
 
   return null;
+  } catch (error) {
+    console.error(`[TRACE] getJobByUid failed - uid: ${uid} - ${Date.now() - startTime}ms`, error);
+    throw error;
+  }
 }
 
 // Function to fetch homepage content (singleton)
 export async function getHomepage() {
-  const result = await stack
-    .contentType("homepage")
-    .entry()
-    .query()
-    .find();
+  console.log(`[TRACE] getHomepage called - ${new Date().toISOString()}`);
+  const startTime = Date.now();
+  
+  try {
+    const result = await stack
+      .contentType("homepage")
+      .entry()
+      .query()
+      .find();
 
-  if (result.entries && result.entries.length > 0) {
-    const entry = result.entries[0];
-    
-    if (process.env.NEXT_PUBLIC_CONTENTSTACK_PREVIEW === 'true') {
-      contentstack.Utils.addEditableTags(entry as any, 'homepage', true);
+    console.log(`[TRACE] getHomepage completed - ${Date.now() - startTime}ms`);
+
+    if (result.entries && result.entries.length > 0) {
+      const entry = result.entries[0];
+      
+      if (process.env.NEXT_PUBLIC_CONTENTSTACK_PREVIEW === 'true') {
+        contentstack.Utils.addEditableTags(entry as any, 'homepage', true);
+      }
+
+      return entry;
     }
 
-    return entry;
+    return null;
+  } catch (error) {
+    console.error(`[TRACE] getHomepage failed - ${Date.now() - startTime}ms`, error);
+    throw error;
   }
-
-  return null;
 }
 
 // Function to fetch navigation content (singleton)
 export async function getNavigation() {
-  const result = await stack
-    .contentType("navigation")
-    .entry()
-    .query()
-    .find();
+  console.log(`[TRACE] getNavigation called - ${new Date().toISOString()}`);
+  const startTime = Date.now();
+  
+  try {
+    const result = await stack
+      .contentType("navigation")
+      .entry()
+      .query()
+      .find();
 
-  if (result.entries && result.entries.length > 0) {
-    const entry = result.entries[0];
-    
-    if (process.env.NEXT_PUBLIC_CONTENTSTACK_PREVIEW === 'true') {
-      contentstack.Utils.addEditableTags(entry as any, 'navigation', true);
+    console.log(`[TRACE] getNavigation completed - ${Date.now() - startTime}ms`);
+
+    if (result.entries && result.entries.length > 0) {
+      const entry = result.entries[0];
+      
+      if (process.env.NEXT_PUBLIC_CONTENTSTACK_PREVIEW === 'true') {
+        contentstack.Utils.addEditableTags(entry as any, 'navigation', true);
+      }
+
+      return entry;
     }
 
-    return entry;
+    return null;
+  } catch (error) {
+    console.error(`[TRACE] getNavigation failed - ${Date.now() - startTime}ms`, error);
+    throw error;
   }
-
-  return null;
 }
 
 // Function to fetch all blog posts
 export async function getBlogs(locale?: string) {
-  // Create a stack instance with locale if provided
-  const stackInstance = locale 
-    ? contentstack.stack({
-        apiKey: process.env.NEXT_PUBLIC_CONTENTSTACK_API_KEY as string,
-        deliveryToken: process.env.NEXT_PUBLIC_CONTENTSTACK_DELIVERY_TOKEN as string,
-        environment: process.env.NEXT_PUBLIC_CONTENTSTACK_ENVIRONMENT as string,
-        region: region ? region : process.env.NEXT_PUBLIC_CONTENTSTACK_REGION as any,
-        host: process.env.NEXT_PUBLIC_CONTENTSTACK_CONTENT_DELIVERY || endpoints && endpoints.contentDelivery,
-        locale: locale,
-      })
-    : stack;
+  console.log(`[TRACE] getBlogs called - locale: ${locale || 'default'} - ${new Date().toISOString()}`);
+  const startTime = Date.now();
+  
+  try {
+    // Create a stack instance with locale if provided
+    const stackInstance = locale 
+      ? contentstack.stack({
+          apiKey: process.env.NEXT_PUBLIC_CONTENTSTACK_API_KEY as string,
+          deliveryToken: process.env.NEXT_PUBLIC_CONTENTSTACK_DELIVERY_TOKEN as string,
+          environment: process.env.NEXT_PUBLIC_CONTENTSTACK_ENVIRONMENT as string,
+          region: region ? region : process.env.NEXT_PUBLIC_CONTENTSTACK_REGION as any,
+          host: process.env.NEXT_PUBLIC_CONTENTSTACK_CONTENT_DELIVERY || endpoints && endpoints.contentDelivery,
+          locale: locale,
+          ...getHttpClientConfig()
+        })
+      : stack;
 
-  const result = await stackInstance
-    .contentType("blog_post")
-    .entry()
-    .query()
-    .find();
+    const result = await stackInstance
+      .contentType("blog_post")
+      .entry()
+      .query()
+      .find();
 
-  if (result.entries) {
-    if (process.env.NEXT_PUBLIC_CONTENTSTACK_PREVIEW === 'true') {
-      result.entries.forEach((entry: any) => {
-        contentstack.Utils.addEditableTags(entry as any, 'blog_post', true);
-      });
+    console.log(`[TRACE] getBlogs completed - ${Date.now() - startTime}ms - entries: ${result.entries?.length || 0}`);
+
+    if (result.entries) {
+      if (process.env.NEXT_PUBLIC_CONTENTSTACK_PREVIEW === 'true') {
+        result.entries.forEach((entry: any) => {
+          contentstack.Utils.addEditableTags(entry as any, 'blog_post', true);
+        });
+      }
+
+      return result.entries;
     }
 
-    return result.entries;
+    return [];
+  } catch (error) {
+    console.error(`[TRACE] getBlogs failed - ${Date.now() - startTime}ms`, error);
+    throw error;
   }
-
-  return [];
 }
 
 // Function to fetch a single blog post by UID
 export async function getBlogByUid(uid: string, locale?: string) {
-  // Create a stack instance with locale if provided
-  const stackInstance = locale 
-    ? contentstack.stack({
-        apiKey: process.env.NEXT_PUBLIC_CONTENTSTACK_API_KEY as string,
-        deliveryToken: process.env.NEXT_PUBLIC_CONTENTSTACK_DELIVERY_TOKEN as string,
-        environment: process.env.NEXT_PUBLIC_CONTENTSTACK_ENVIRONMENT as string,
-        region: region ? region : process.env.NEXT_PUBLIC_CONTENTSTACK_REGION as any,
-        host: process.env.NEXT_PUBLIC_CONTENTSTACK_CONTENT_DELIVERY || endpoints && endpoints.contentDelivery,
-        locale: locale,
-      })
-    : stack;
+  console.log(`[TRACE] getBlogByUid called - uid: ${uid}, locale: ${locale || 'default'} - ${new Date().toISOString()}`);
+  const startTime = Date.now();
+  
+  try {
+    // Create a stack instance with locale if provided
+    const stackInstance = locale 
+      ? contentstack.stack({
+          apiKey: process.env.NEXT_PUBLIC_CONTENTSTACK_API_KEY as string,
+          deliveryToken: process.env.NEXT_PUBLIC_CONTENTSTACK_DELIVERY_TOKEN as string,
+          environment: process.env.NEXT_PUBLIC_CONTENTSTACK_ENVIRONMENT as string,
+          region: region ? region : process.env.NEXT_PUBLIC_CONTENTSTACK_REGION as any,
+          host: process.env.NEXT_PUBLIC_CONTENTSTACK_CONTENT_DELIVERY || endpoints && endpoints.contentDelivery,
+          locale: locale,
+          ...getHttpClientConfig()
+        })
+      : stack;
 
-  const result = await stackInstance
-    .contentType("blog_post")
-    .entry(uid)
-    .fetch();
+    const result = await stackInstance
+      .contentType("blog_post")
+      .entry(uid)
+      .fetch();
 
-  if (result) {
-    if (process.env.NEXT_PUBLIC_CONTENTSTACK_PREVIEW === 'true') {
-      contentstack.Utils.addEditableTags(result as any, 'blog_post', true);
+    console.log(`[TRACE] getBlogByUid completed - uid: ${uid} - ${Date.now() - startTime}ms`);
+
+    if (result) {
+      if (process.env.NEXT_PUBLIC_CONTENTSTACK_PREVIEW === 'true') {
+        contentstack.Utils.addEditableTags(result as any, 'blog_post', true);
+      }
+
+      return result;
     }
 
-    return result;
+    return null;
+  } catch (error) {
+    console.error(`[TRACE] getBlogByUid failed - uid: ${uid} - ${Date.now() - startTime}ms`, error);
+    throw error;
   }
-
-  return null;
 }
 
 // Function to fetch a blog post by slug
 export async function getBlogBySlug(slug: string) {
-  const result = await stack
-    .contentType("blog_post")
-    .entry()
-    .query()
-    .where("slug", QueryOperation.EQUALS, slug)
-    .find();
+  console.log(`[TRACE] getBlogBySlug called - slug: ${slug} - ${new Date().toISOString()}`);
+  const startTime = Date.now();
+  
+  try {
+    const result = await stack
+      .contentType("blog_post")
+      .entry()
+      .query()
+      .where("slug", QueryOperation.EQUALS, slug)
+      .find();
 
-  if (result.entries && result.entries.length > 0) {
-    const entry = result.entries[0];
-    
-    if (process.env.NEXT_PUBLIC_CONTENTSTACK_PREVIEW === 'true') {
-      contentstack.Utils.addEditableTags(entry as any, 'blog_post', true);
+    console.log(`[TRACE] getBlogBySlug completed - slug: ${slug} - ${Date.now() - startTime}ms`);
+
+    if (result.entries && result.entries.length > 0) {
+      const entry = result.entries[0];
+      
+      if (process.env.NEXT_PUBLIC_CONTENTSTACK_PREVIEW === 'true') {
+        contentstack.Utils.addEditableTags(entry as any, 'blog_post', true);
+      }
+
+      return entry;
     }
 
-    return entry;
+    return null;
+  } catch (error) {
+    console.error(`[TRACE] getBlogBySlug failed - slug: ${slug} - ${Date.now() - startTime}ms`, error);
+    throw error;
   }
-
-  return null;
 }
 
 // Interface for user context used in personalization
@@ -474,23 +632,28 @@ export async function getPersonalizedBanner(
   userContext?: PersonalizationContext,
   locale?: string
 ) {
-  // Create a stack instance with locale if provided
-  const stackInstance = locale 
-    ? contentstack.stack({
-        apiKey: process.env.NEXT_PUBLIC_CONTENTSTACK_API_KEY as string,
-        deliveryToken: process.env.NEXT_PUBLIC_CONTENTSTACK_DELIVERY_TOKEN as string,
-        environment: process.env.NEXT_PUBLIC_CONTENTSTACK_ENVIRONMENT as string,
-        region: region ? region : process.env.NEXT_PUBLIC_CONTENTSTACK_REGION as any,
-        host: process.env.NEXT_PUBLIC_CONTENTSTACK_CONTENT_DELIVERY || endpoints && endpoints.contentDelivery,
-        locale: locale,
-      })
-    : stack;
+  console.log(`[TRACE] getPersonalizedBanner called - locale: ${locale || 'default'}, segment: ${userContext?.userSegment || 'none'} - ${new Date().toISOString()}`);
+  const startTime = Date.now();
+  
+  try {
+    // Create a stack instance with locale if provided
+    const stackInstance = locale 
+      ? contentstack.stack({
+          apiKey: process.env.NEXT_PUBLIC_CONTENTSTACK_API_KEY as string,
+          deliveryToken: process.env.NEXT_PUBLIC_CONTENTSTACK_DELIVERY_TOKEN as string,
+          environment: process.env.NEXT_PUBLIC_CONTENTSTACK_ENVIRONMENT as string,
+          region: region ? region : process.env.NEXT_PUBLIC_CONTENTSTACK_REGION as any,
+          host: process.env.NEXT_PUBLIC_CONTENTSTACK_CONTENT_DELIVERY || endpoints && endpoints.contentDelivery,
+          locale: locale,
+          ...getHttpClientConfig()
+        })
+      : stack;
 
-  // Build query with personalization
-  let query = stackInstance
-    .contentType("personalized_banner")
-    .entry()
-    .query();
+    // Build query with personalization
+    let query = stackInstance
+      .contentType("personalized_banner")
+      .entry()
+      .query();
 
   // Add personalization context if provided
   // Contentstack Personalization works by:
@@ -530,6 +693,8 @@ export async function getPersonalizedBanner(
 
   const result = await query.find();
 
+  console.log(`[TRACE] getPersonalizedBanner completed - ${Date.now() - startTime}ms - entries: ${result.entries?.length || 0}`);
+
   if (result.entries && result.entries.length > 0) {
     // If multiple entries, prioritize by priority field or return first
     let entry = result.entries[0];
@@ -552,6 +717,10 @@ export async function getPersonalizedBanner(
   }
 
   return null;
+  } catch (error) {
+    console.error(`[TRACE] getPersonalizedBanner failed - ${Date.now() - startTime}ms`, error);
+    throw error;
+  }
 }
 
 // ============================================
@@ -592,6 +761,9 @@ export async function getLearningResources(options?: {
   featured?: boolean;
   limit?: number;
 }) {
+  console.log(`[TRACE] getLearningResources called - options: ${JSON.stringify(options)} - ${new Date().toISOString()}`);
+  const startTime = Date.now();
+  
   try {
     let query = stack
       .contentType("learning_resource")
@@ -612,6 +784,8 @@ export async function getLearningResources(options?: {
     }
 
     const result = await query.find();
+    
+    console.log(`[TRACE] getLearningResources completed - ${Date.now() - startTime}ms - entries: ${result.entries?.length || 0}`);
 
     if (result.entries) {
       let entries = result.entries as ContentstackLearningResource[];
@@ -640,7 +814,7 @@ export async function getLearningResources(options?: {
 
     return [];
   } catch (error) {
-    // Content type may not exist yet - return empty array
+    console.error(`[TRACE] getLearningResources failed - ${Date.now() - startTime}ms`, error);
     console.warn('Learning resources not available:', error);
     return [];
   }
@@ -650,6 +824,9 @@ export async function getLearningResources(options?: {
  * Fetch a single learning resource by slug
  */
 export async function getLearningResourceBySlug(slug: string) {
+  console.log(`[TRACE] getLearningResourceBySlug called - slug: ${slug} - ${new Date().toISOString()}`);
+  const startTime = Date.now();
+  
   try {
     const result = await stack
       .contentType("learning_resource")
@@ -657,6 +834,8 @@ export async function getLearningResourceBySlug(slug: string) {
       .query()
       .where("slug", QueryOperation.EQUALS, slug)
       .find();
+
+    console.log(`[TRACE] getLearningResourceBySlug completed - slug: ${slug} - ${Date.now() - startTime}ms`);
 
     if (result.entries && result.entries.length > 0) {
       const entry = result.entries[0] as ContentstackLearningResource;
@@ -670,6 +849,7 @@ export async function getLearningResourceBySlug(slug: string) {
 
     return null;
   } catch (error) {
+    console.error(`[TRACE] getLearningResourceBySlug failed - slug: ${slug} - ${Date.now() - startTime}ms`, error);
     console.warn('Learning resource not found:', error);
     return null;
   }
@@ -679,11 +859,16 @@ export async function getLearningResourceBySlug(slug: string) {
  * Get all unique technologies from learning resources
  */
 export async function getLearningTechnologies() {
+  console.log(`[TRACE] getLearningTechnologies called - ${new Date().toISOString()}`);
+  const startTime = Date.now();
+  
   try {
     const resources = await getLearningResources();
     const technologies = [...new Set(resources.map(r => r.technology))];
+    console.log(`[TRACE] getLearningTechnologies completed - ${Date.now() - startTime}ms - technologies: ${technologies.length}`);
     return technologies.sort();
   } catch (error) {
+    console.error(`[TRACE] getLearningTechnologies failed - ${Date.now() - startTime}ms`, error);
     console.warn('Could not fetch technologies:', error);
     return [];
   }
@@ -698,12 +883,17 @@ export async function getLearningTechnologies() {
  * This fetches a demo video entry from Contentstack that can be displayed on /demo route
  */
 export async function getDemoVideo() {
+  console.log(`[TRACE] getDemoVideo called - ${new Date().toISOString()}`);
+  const startTime = Date.now();
+  
   try {
     const result = await stack
       .contentType("demo_video")
       .entry()
       .query()
       .find();
+
+    console.log(`[TRACE] getDemoVideo completed - ${Date.now() - startTime}ms`);
 
     if (result.entries && result.entries.length > 0) {
       const entry = result.entries[0];
@@ -717,7 +907,7 @@ export async function getDemoVideo() {
 
     return null;
   } catch (error) {
-    // Content type may not exist yet - return null
+    console.error(`[TRACE] getDemoVideo failed - ${Date.now() - startTime}ms`, error);
     console.warn('Demo video not available:', error);
     return null;
   }
