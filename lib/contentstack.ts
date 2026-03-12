@@ -11,6 +11,9 @@ import { Page } from "./types";
 import http from "http";
 import https from "https";
 
+// Importing Next.js notFound function to trigger 404 page
+import { notFound } from "next/navigation";
+
 // helper functions from private package to retrieve Contentstack endpoints in a convienient way
 import { getContentstackEndpoints, getRegionForString } from "@timbenniks/contentstack-endpoints";
 
@@ -40,11 +43,6 @@ const httpsAgent = new https.Agent({
 // Helper function to get HTTP client configuration with keepAlive agents and retry logic
 function getHttpClientConfig() {
   return {
-    // Configure HTTP agent with keepAlive for connection pooling
-    httpAgent: httpAgent,
-    
-    // Configure HTTPS agent with keepAlive for connection pooling
-    httpsAgent: httpsAgent,
     
     // Retry configuration for failed requests
     retryLimit: 5, // Number of retries before failing
@@ -96,6 +94,10 @@ export const stack = contentstack.stack({
   ...getHttpClientConfig()
 });
 
+const client = stack.getClient();
+client.defaults.httpAgent = httpAgent;
+client.defaults.httpsAgent = httpsAgent;
+
 // Initialize live preview functionality
 export function initLivePreview() {
   ContentstackLivePreview.init({
@@ -128,7 +130,7 @@ export async function getPage(url: string) {
       .where("url", QueryOperation.EQUALS, url) // Filtering entries by URL
       .find<Page>(); // Executing the query and expecting a result of type Page
 
-    if (result.entries) {
+    if (result.entries && result.entries.length > 0) {
       const entry = result.entries[0]; // Getting the first entry from the result
 
       if (process.env.NEXT_PUBLIC_CONTENTSTACK_PREVIEW === 'true') {
@@ -137,9 +139,13 @@ export async function getPage(url: string) {
 
       return entry; // Returning the fetched entry
     }
+    
+    // No entries found, trigger not-found page
+    notFound();
   } catch (error) {
     console.error('Error fetching page:', error);
-    throw error;
+    // On error, trigger not-found page
+    notFound();
   }
 }
 
@@ -165,7 +171,8 @@ export async function getCompanies() {
     return [];
   } catch (error) {
     console.error('Error fetching companies:', error);
-    throw error;
+    // On error, trigger not-found page
+    notFound();
   }
 }
 
@@ -185,10 +192,12 @@ export async function getCompanyByUid(uid: string) {
       return result; // Returning the fetched company
     }
 
-    return null;
+    // No result found, trigger not-found page
+    notFound();
   } catch (error) {
     console.error('Error fetching company:', error);
-    throw error;
+    // On error, trigger not-found page
+    notFound();
   }
 }
 
@@ -309,7 +318,8 @@ export async function getJobs() {
   return [];
   } catch (error) {
     console.error('Error fetching jobs:', error);
-    throw error;
+    // On error, trigger not-found page
+    notFound();
   }
 }
 
@@ -381,10 +391,12 @@ export async function getJobByUid(uid: string) {
     return result; // Returning the fetched job
   }
 
-  return null;
+  // No result found, trigger not-found page
+  notFound();
   } catch (error) {
     console.error('Error fetching job:', error);
-    throw error;
+    // On error, trigger not-found page
+    notFound();
   }
 }
 
@@ -407,10 +419,12 @@ export async function getHomepage() {
       return entry;
     }
 
-    return null;
+    // No homepage found, trigger not-found page
+    notFound();
   } catch (error) {
     console.error('Error fetching homepage:', error);
-    throw error;
+    // On error, trigger not-found page
+    notFound();
   }
 }
 
@@ -433,10 +447,12 @@ export async function getNavigation() {
       return entry;
     }
 
-    return null;
+    // No navigation found, trigger not-found page
+    notFound();
   } catch (error) {
     console.error('Error fetching navigation:', error);
-    throw error;
+    // On error, trigger not-found page
+    notFound();
   }
 }
 
@@ -475,7 +491,8 @@ export async function getBlogs(locale?: string) {
     return [];
   } catch (error) {
     console.error('Error fetching blogs:', error);
-    throw error;
+    // On error, trigger not-found page
+    notFound();
   }
 }
 
@@ -508,10 +525,12 @@ export async function getBlogByUid(uid: string, locale?: string) {
       return result;
     }
 
-    return null;
+    // No blog found, trigger not-found page
+    notFound();
   } catch (error) {
     console.error('Error fetching blog:', error);
-    throw error;
+    // On error, trigger not-found page
+    notFound();
   }
 }
 
@@ -535,10 +554,12 @@ export async function getBlogBySlug(slug: string) {
       return entry;
     }
 
-    return null;
+    // No blog found, trigger not-found page
+    notFound();
   } catch (error) {
     console.error('Error fetching blog by slug:', error);
-    throw error;
+    // On error, trigger not-found page
+    notFound();
   }
 }
 
@@ -766,10 +787,12 @@ export async function getLearningResourceBySlug(slug: string) {
       return entry;
     }
 
-    return null;
+    // No learning resource found, trigger not-found page
+    notFound();
   } catch (error) {
-    console.warn('Learning resource not found:', error);
-    return null;
+    console.error('Error fetching learning resource:', error);
+    // On error, trigger not-found page
+    notFound();
   }
 }
 
