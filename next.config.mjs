@@ -1,6 +1,21 @@
 /** @type {import('next').NextConfig} */
 const nextConfig = {
   output: 'standalone',
+  webpack: (config, { isServer }) => {
+    if (!isServer) {
+      config.resolve.fallback = {
+        ...config.resolve.fallback,
+        dns: false,
+        http: false,
+        https: false,
+        net: false,
+        tls: false,
+        dgram: false,
+        fs: false,
+      };
+    }
+    return config;
+  },
   images: {
     // Configure allowed hostnames for Next.js Image Optimization
     remotePatterns: [

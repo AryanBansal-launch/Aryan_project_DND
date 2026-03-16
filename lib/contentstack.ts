@@ -7,10 +7,6 @@ import ContentstackLivePreview, { IStackSdk } from "@contentstack/live-preview-u
 // Importing the Page type definition 
 import { Page } from "./types";
 
-import http from "http";
-import https from "https";
-import dns from "dns";
-
 // Importing Next.js notFound function to trigger 404 page
 import { notFound } from "next/navigation";
 
@@ -55,17 +51,22 @@ export const stack = contentstack.stack({
 
 });
 
-const ipv4Lookup = (
-  hostname: string,
-  options: dns.LookupOptions,
-  callback: (err: NodeJS.ErrnoException | null, address: string | dns.LookupAddress[], family?: number) => void
-) => {
-  dns.lookup(hostname, { ...options, family: 4 }, callback);
-};
+// Force IPv4 DNS resolution on the server side via httpAgent
+if (typeof window === "undefined") {
+  /* eslint-disable @typescript-eslint/no-require-imports */
+  const dns = require("dns");
+  const http = require("http");
+  const https = require("https");
+  /* eslint-enable @typescript-eslint/no-require-imports */
 
-const client = stack.getClient();
-client.defaults.httpAgent = new http.Agent({ lookup: ipv4Lookup });
-client.defaults.httpsAgent = new https.Agent({ lookup: ipv4Lookup });
+  const ipv4Lookup = (hostname: string, options: any, callback: any) => {
+    dns.lookup(hostname, { ...options, family: 4 }, callback);
+  };
+
+  const client = stack.getClient();
+  client.defaults.httpAgent = new http.Agent({ lookup: ipv4Lookup });
+  client.defaults.httpsAgent = new https.Agent({ lookup: ipv4Lookup });
+}
 
 // Initialize live preview functionality
 export function initLivePreview() {
