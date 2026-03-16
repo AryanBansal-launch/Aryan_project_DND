@@ -7,9 +7,9 @@ import ContentstackLivePreview, { IStackSdk } from "@contentstack/live-preview-u
 // Importing the Page type definition 
 import { Page } from "./types";
 
-// Importing Node.js http and https modules for agent configuration
 import http from "http";
 import https from "https";
+import dns from "dns";
 
 // Importing Next.js notFound function to trigger 404 page
 import { notFound } from "next/navigation";
@@ -21,43 +21,6 @@ import { getContentstackEndpoints, getRegionForString } from "@timbenniks/conten
 const region = getRegionForString(process.env.NEXT_PUBLIC_CONTENTSTACK_REGION as string)
 // object with all endpoints for region.
 const endpoints = getContentstackEndpoints(region, true)
-
-// Configure HTTP/HTTPS agents with keepAlive enabled for connection reuse
-// This improves performance by reusing TCP connections across multiple requests
-const httpAgent = new http.Agent({
-  keepAlive: true,
-  keepAliveMsecs: 180000, // Send keep-alive probes every 1 second
-  maxSockets: 50, // Maximum number of sockets to allow per host
-  maxFreeSockets: 20, // Maximum number of sockets to leave open in a free state
-  timeout: 60000, // Socket timeout in milliseconds
-});
-
-const httpsAgent = new https.Agent({
-  keepAlive: true,
-  keepAliveMsecs: 180000,
-  maxSockets: 50,
-  maxFreeSockets: 20,
-  timeout: 60000,
-});
-
-// Helper function to get HTTP client configuration with keepAlive agents and retry logic
-function getHttpClientConfig() {
-  return {
-    
-    // Retry configuration for failed requests
-    retryLimit: 5, // Number of retries before failing
-    retryDelay: 300, // Base delay in milliseconds between retries
-    retryCondition: (error: any) => {
-      // Retry on network errors, timeouts, rate limits, and server errors
-      return error && error.status && [408, 429, 500, 502, 503, 504].includes(error.status);
-    },
-    retryDelayOptions: {
-      base: 1000, // Base delay for exponential backoff (1st retry: 1000ms, 2nd: 2000ms, etc.)
-      customBackoff: () => 0, // Placeholder function, base will be used
-    },
-    timeout: 30000, // Request timeout in milliseconds
-  };
-}
 
 export const stack = contentstack.stack({
   // Setting the API key from environment variables
@@ -90,13 +53,19 @@ export const stack = contentstack.stack({
     host: process.env.NEXT_PUBLIC_CONTENTSTACK_PREVIEW_HOST || endpoints && endpoints.preview
   },
 
-  // Configure HTTP agents with keepAlive for connection reuse and retry logic
-  ...getHttpClientConfig()
 });
 
+const ipv4Lookup = (
+  hostname: string,
+  options: dns.LookupOptions,
+  callback: (err: NodeJS.ErrnoException | null, address: string | dns.LookupAddress[], family?: number) => void
+) => {
+  dns.lookup(hostname, { ...options, family: 4 }, callback);
+};
+
 const client = stack.getClient();
-client.defaults.httpAgent = httpAgent;
-client.defaults.httpsAgent = httpsAgent;
+client.defaults.httpAgent = new http.Agent({ lookup: ipv4Lookup });
+client.defaults.httpsAgent = new https.Agent({ lookup: ipv4Lookup });
 
 // Initialize live preview functionality
 export function initLivePreview() {
@@ -468,7 +437,7 @@ export async function getBlogs(locale?: string) {
           region: region ? region : process.env.NEXT_PUBLIC_CONTENTSTACK_REGION as any,
           host: process.env.NEXT_PUBLIC_CONTENTSTACK_CONTENT_DELIVERY || endpoints && endpoints.contentDelivery,
           locale: locale,
-          ...getHttpClientConfig()
+
         })
       : stack;
 
@@ -508,7 +477,7 @@ export async function getBlogByUid(uid: string, locale?: string) {
           region: region ? region : process.env.NEXT_PUBLIC_CONTENTSTACK_REGION as any,
           host: process.env.NEXT_PUBLIC_CONTENTSTACK_CONTENT_DELIVERY || endpoints && endpoints.contentDelivery,
           locale: locale,
-          ...getHttpClientConfig()
+
         })
       : stack;
 
@@ -598,7 +567,7 @@ export async function getPersonalizedBanner(
           region: region ? region : process.env.NEXT_PUBLIC_CONTENTSTACK_REGION as any,
           host: process.env.NEXT_PUBLIC_CONTENTSTACK_CONTENT_DELIVERY || endpoints && endpoints.contentDelivery,
           locale: locale,
-          ...getHttpClientConfig()
+
         })
       : stack;
 
