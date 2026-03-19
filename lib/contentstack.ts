@@ -232,7 +232,7 @@ export async function getJobs() {
           try {
             // Add timeout wrapper to prevent hanging requests
             const timeoutPromise = new Promise((_, reject) => 
-              setTimeout(() => reject(new Error('Request timeout')), 10000) // 10 second timeout
+              setTimeout(() => reject(new Error('Request timeout')), 30000) // 30 second timeout
             );
             
             const company = await Promise.race([
