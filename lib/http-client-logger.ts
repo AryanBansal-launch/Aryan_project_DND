@@ -1,0 +1,141 @@
+/**
+ * HTTP Client Logger for debugging failed requests
+ *
+ * Captures:
+ * - When the request is initiated
+ * - Where the timeout/failure occurs
+ * - Whether the failure happens before a connection is fully established
+ *
+ * Enable via: CONTENTSTACK_HTTP_DEBUG=true or NEXT_PUBLIC_CONTENTSTACK_HTTP_DEBUG=true
+ */
+
+export interface HttpFailureLog {
+  timestamp: string;
+  requestInitiatedAt: string;
+  failurePhase: "before_connection" | "during_transfer" | "after_response";
+  errorCode: string;
+  errorMessage: string;
+  url: string;
+  method: string;
+  durationMs?: number;
+  hasRequestObject: boolean;
+  hasResponseObject: boolean;
+  rawError?: string;
+}
+
+const isDebugEnabled = () =>
+  process.env.CONTENTSTACK_HTTP_DEBUG === "true" ||
+  process.env.NEXT_PUBLIC_CONTENTSTACK_HTTP_DEBUG === "true";
+
+function formatTimestamp(date: Date) {
+  return date.toISOString();
+}
+
+/**
+ * Determines the failure phase based on Axios error structure:
+ * - before_connection: No request was sent (DNS failure, connection refused, etc.)
+ * - during_transfer: Request sent but no response received (timeout, connection reset)
+ * - after_response: Got HTTP response (4xx, 5xx)
+ */
+function getFailurePhase(error: any): HttpFailureLog["failurePhase"] {
+  if (error.response) {
+    return "after_response";
+  }
+  if (error.request) {
+    return "during_transfer";
+  }
+  return "before_connection";
+}
+
+/**
+ * Adds request/response interceptors to an Axios client for detailed failure logging.
+ * Call this on the Contentstack stack client when debugging HTTP issues.
+ */
+export function addHttpClientLogging(client: any): void {
+  if (!isDebugEnabled() || typeof client?.interceptors?.request?.use !== "function") {
+    return;
+  }
+
+  const requestTimestamps = new Map<string, number>();
+
+  // Log when request is initiated
+  client.interceptors.request.use(
+    (config: any) => {
+      const requestId = `${Date.now()}-${Math.random().toString(36).slice(2, 9)}`;
+      config._httpLogRequestId = requestId;
+      requestTimestamps.set(requestId, Date.now());
+
+      const logEntry = {
+        event: "request_initiated",
+        timestamp: formatTimestamp(new Date()),
+        requestId,
+        url: config.url || config.baseURL,
+        method: (config.method || "get").toUpperCase(),
+        fullUrl: config.baseURL ? `${config.baseURL}${config.url || ""}` : config.url,
+      };
+
+      console.log("[HTTP-CLIENT] Request initiated:", JSON.stringify(logEntry, null, 2));
+      return config;
+    },
+    (error: any) => {
+      console.error("[HTTP-CLIENT] Request interceptor error:", error?.message, error);
+      return Promise.reject(error);
+    }
+  );
+
+  // Log failures (timeouts, connection errors, etc.)
+  client.interceptors.response.use(
+    (response: any) => {
+      const requestId = response?.config?._httpLogRequestId;
+      if (requestId) {
+        const startedAt = requestTimestamps.get(requestId);
+        if (startedAt) {
+          const durationMs = Date.now() - startedAt;
+          console.log(
+            `[HTTP-CLIENT] Request completed: ${response?.config?.url} - ${response?.status} (${durationMs}ms)`
+          );
+        }
+        requestTimestamps.delete(requestId);
+      }
+      return response;
+    },
+    (error: any) => {
+      const config = error?.config;
+      const requestId = config?._httpLogRequestId;
+      const startedAt = requestId ? requestTimestamps.get(requestId) : undefined;
+      if (requestId) requestTimestamps.delete(requestId);
+
+      const failureLog: HttpFailureLog = {
+        timestamp: formatTimestamp(new Date()),
+        requestInitiatedAt: startedAt ? formatTimestamp(new Date(startedAt)) : "unknown",
+        failurePhase: getFailurePhase(error),
+        errorCode: error?.code || error?.cause?.code || "UNKNOWN",
+        errorMessage: error?.message || String(error),
+        url: config?.url || config?.baseURL || "unknown",
+        method: (config?.method || "get").toUpperCase(),
+        durationMs: startedAt ? Date.now() - startedAt : undefined,
+        hasRequestObject: !!error?.request,
+        hasResponseObject: !!error?.response,
+        rawError: error?.cause ? String(error.cause) : undefined,
+      };
+
+      console.error(
+        "[HTTP-CLIENT] Request FAILED:",
+        JSON.stringify(failureLog, null, 2)
+      );
+
+      // Human-readable summary for quick scanning
+      const phaseDesc =
+        failureLog.failurePhase === "before_connection"
+          ? "BEFORE connection established (DNS/connect refused/etc)"
+          : failureLog.failurePhase === "during_transfer"
+            ? "DURING transfer (timeout/connection reset - request was sent)"
+            : "AFTER response received (HTTP error)";
+      console.error(
+        `[HTTP-CLIENT] Failure phase: ${phaseDesc} | Code: ${failureLog.errorCode} | Duration: ${failureLog.durationMs ?? "?"}ms`
+      );
+
+      return Promise.reject(error);
+    }
+  );
+}

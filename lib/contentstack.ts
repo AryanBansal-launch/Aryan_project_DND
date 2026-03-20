@@ -7,8 +7,8 @@ import ContentstackLivePreview, { IStackSdk } from "@contentstack/live-preview-u
 // Importing the Page type definition 
 import { Page } from "./types";
 
-// Importing Next.js notFound function to trigger 404 page
-import { notFound } from "next/navigation";
+// HTTP client logging for debugging failed requests (enable via CONTENTSTACK_HTTP_DEBUG=true)
+import { addHttpClientLogging } from "./http-client-logger";
 
 // helper functions from private package to retrieve Contentstack endpoints in a convienient way
 import { getContentstackEndpoints, getRegionForString } from "@timbenniks/contentstack-endpoints";
@@ -47,25 +47,13 @@ export const stack = contentstack.stack({
     // Setting the host for live preview based on the region
     // for internal testing purposes at Contentstack we look for a custom host in the env vars, you do not have to do this.
     host: process.env.NEXT_PUBLIC_CONTENTSTACK_PREVIEW_HOST || endpoints && endpoints.preview
-  },
-
+  }
 });
 
-// Force IPv4 DNS resolution on the server side via httpAgent
+// Add HTTP client logging for failed requests (enable via CONTENTSTACK_HTTP_DEBUG=true)
 if (typeof window === "undefined") {
-  /* eslint-disable @typescript-eslint/no-require-imports */
-  const dns = require("dns");
-  const http = require("http");
-  const https = require("https");
-  /* eslint-enable @typescript-eslint/no-require-imports */
-
-  const ipv4Lookup = (hostname: string, options: any, callback: any) => {
-    dns.lookup(hostname, { ...options, family: 4 }, callback);
-  };
-
   const client = stack.getClient();
-  client.defaults.httpAgent = new http.Agent({ lookup: ipv4Lookup });
-  client.defaults.httpsAgent = new https.Agent({ lookup: ipv4Lookup });
+  addHttpClientLogging(client);
 }
 
 // Initialize live preview functionality
@@ -92,83 +80,61 @@ export function initLivePreview() {
 }
 // Function to fetch page data based on the URL
 export async function getPage(url: string) {
-  try {
-    const result = await stack
-      .contentType("page") // Specifying the content type as "page"
-      .entry() // Accessing the entry
-      .query() // Creating a query
-      .where("url", QueryOperation.EQUALS, url) // Filtering entries by URL
-      .find<Page>(); // Executing the query and expecting a result of type Page
+  const result = await stack
+    .contentType("page") // Specifying the content type as "page"
+    .entry() // Accessing the entry
+    .query() // Creating a query
+    .where("url", QueryOperation.EQUALS, url) // Filtering entries by URL
+    .find<Page>(); // Executing the query and expecting a result of type Page
 
-    if (result.entries && result.entries.length > 0) {
-      const entry = result.entries[0]; // Getting the first entry from the result
+  if (result.entries) {
+    const entry = result.entries[0]; // Getting the first entry from the result
 
-      if (process.env.NEXT_PUBLIC_CONTENTSTACK_PREVIEW === 'true') {
-        contentstack.Utils.addEditableTags(entry, 'page', true); // Adding editable tags for live preview if enabled
-      }
-
-      return entry; // Returning the fetched entry
+    if (process.env.NEXT_PUBLIC_CONTENTSTACK_PREVIEW === 'true') {
+      contentstack.Utils.addEditableTags(entry, 'page', true); // Adding editable tags for live preview if enabled
     }
-    
-    // No entries found, trigger not-found page
-    notFound();
-  } catch (error) {
-    console.error('Error fetching page:', error);
-    // On error, trigger not-found page
-    notFound();
+
+    return entry; // Returning the fetched entry
   }
 }
 
 // Function to fetch all companies
 export async function getCompanies() {
-  try {
-    const result = await stack
-      .contentType("company") // Specifying the content type as "company"
-      .entry() // Accessing the entry
-      .query() // Creating a query
-      .find(); // Executing the query
+  const result = await stack
+    .contentType("company") // Specifying the content type as "company"
+    .entry() // Accessing the entry
+    .query() // Creating a query
+    .find(); // Executing the query
 
-    if (result.entries) {
-      if (process.env.NEXT_PUBLIC_CONTENTSTACK_PREVIEW === 'true') {
-        result.entries.forEach(entry => {
-          contentstack.Utils.addEditableTags(entry as any, 'company', true); // Adding editable tags for live preview if enabled
-        });
-      }
-
-      return result.entries; // Returning all company entries
+  if (result.entries) {
+    if (process.env.NEXT_PUBLIC_CONTENTSTACK_PREVIEW === 'true') {
+      result.entries.forEach(entry => {
+        contentstack.Utils.addEditableTags(entry as any, 'company', true); // Adding editable tags for live preview if enabled
+      });
     }
 
-    return [];
-  } catch (error) {
-    console.error('Error fetching companies:', error);
-    // On error, trigger not-found page
-    notFound();
+    return result.entries; // Returning all company entries
   }
+
+  return [];
 }
 
 // Function to fetch a single company by UID
 export async function getCompanyByUid(uid: string) {
-  try {
-    const result = await stack
-      .contentType("company") // Specifying the content type as "company"
-      .entry(uid) // Accessing specific entry by UID
-      .fetch(); // Fetching the entry
+  const result = await stack
+    .contentType("company") // Specifying the content type as "company"
+    .entry(uid) // Accessing specific entry by UID
+    .fetch(); // Fetching the entry
 
-    if (result) {
-      if (process.env.NEXT_PUBLIC_CONTENTSTACK_PREVIEW === 'true') {
-        contentstack.Utils.addEditableTags(result as any, 'company', true); // Adding editable tags for live preview if enabled
-      }
-
-      return result; // Returning the fetched company
+  if (result) {
+    if (process.env.NEXT_PUBLIC_CONTENTSTACK_PREVIEW === 'true') {
+      contentstack.Utils.addEditableTags(result as any, 'company', true); // Adding editable tags for live preview if enabled
     }
 
-    // No result found, trigger not-found page
-    notFound();
-  } catch (error) {
-    console.error('Error fetching company:', error);
-    // On error, trigger not-found page
-    notFound();
+    return result; // Returning the fetched company
   }
+
+  return null;
 }
 
 // Helper function to create placeholder company data
@@ -185,253 +151,311 @@ function createPlaceholderCompany(job: any, companyUid: string | null) {
   };
 }
 
-// Helper to normalize company data (handles includeReference response - full object or reference)
-function normalizeJobCompany(job: any): void {
-  if (!job.company) {
-    job.company = [createPlaceholderCompany(job, null)];
-    return;
-  }
-  const raw = job.company;
-  // Full company object(s) from includeReference - normalize to [company]
-  if (Array.isArray(raw) && raw.length > 0) {
-    if (typeof raw[0] === 'object' && raw[0]?.uid) {
-      job.company = [raw[0]];
-      return;
-    }
-    if (typeof raw[0] === 'string') {
-      job.company = [createPlaceholderCompany(job, raw[0])];
-      return;
-    }
-  }
-  if (typeof raw === 'object' && !Array.isArray(raw) && raw.uid) {
-    job.company = [raw];
-    return;
-  }
-  if (typeof raw === 'string') {
-    job.company = [createPlaceholderCompany(job, raw)];
-    return;
-  }
-  job.company = [createPlaceholderCompany(job, null)];
-}
-
-// Function to fetch all jobs (optimized: company embedded via includeReference - 1 API call instead of 1+N)
+// Function to fetch all jobs
 export async function getJobs() {
-  try {
-    const result = await stack
-      .contentType("job")
-      .entry()
-      .includeReference("company")
-      .query()
-      .find();
+  const result = await stack
+    .contentType("job") // Specifying the content type as "job"
+    .entry() // Accessing the entry
+    .query() // Creating a query
+    .find(); // Executing the query
 
-    if (result.entries) {
-      const entries = result.entries;
+  if (result.entries) {
+    const entries = result.entries;
     
     if (process.env.NEXT_PUBLIC_CONTENTSTACK_PREVIEW === 'true') {
       entries.forEach((entry: any) => {
-        contentstack.Utils.addEditableTags(entry as any, 'job', true);
+        contentstack.Utils.addEditableTags(entry as any, 'job', true); // Adding editable tags for live preview if enabled
       });
     }
 
-    entries.forEach((job: any) => normalizeJobCompany(job));
-    return entries;
+    // Fetch company details for each job
+    // Use Promise.allSettled to handle failures gracefully
+    const jobsWithCompanyResults = await Promise.allSettled(
+      entries.map(async (job: any) => {
+        let companyUid: string | null = null;
+        
+        // Determine the company UID from different possible structures
+        if (job.company) {
+          if (Array.isArray(job.company) && job.company.length > 0) {
+            // Array of references
+            if (typeof job.company[0] === 'string') {
+              companyUid = job.company[0];
+            } else if (job.company[0].uid) {
+              companyUid = job.company[0].uid;
+            }
+          } else if (typeof job.company === 'string') {
+            // Direct UID string
+            companyUid = job.company;
+          } else if (typeof job.company === 'object' && !Array.isArray(job.company) && job.company.uid) {
+            // Object with uid property
+            companyUid = job.company.uid;
+          }
+        }
+        
+        // Fetch the full company data if we have a UID
+        if (companyUid) {
+          try {
+            // Add timeout wrapper to prevent hanging requests
+            const timeoutPromise = new Promise((_, reject) => 
+              setTimeout(() => reject(new Error('Request timeout')), 10000) // 10 second timeout
+            );
+            
+            const company = await Promise.race([
+              getCompanyByUid(companyUid),
+              timeoutPromise
+            ]) as any;
+            
+            if (company) {
+              job.company = [company]; // Store as array for consistency
+            } else {
+              // Create placeholder if company fetch returns null
+              job.company = [createPlaceholderCompany(job, companyUid)];
+            }
+          } catch (error: any) {
+            // Log error but don't fail the entire job
+            if (error.message !== 'Request timeout') {
+              console.error(`Failed to fetch company ${companyUid}:`, error.message || error);
+            } else {
+              console.error(`Timeout fetching company ${companyUid}`);
+            }
+            // Create placeholder company on error
+            job.company = [createPlaceholderCompany(job, companyUid)];
+          }
+        } else {
+          // Create a placeholder company for jobs without company data
+          job.company = [createPlaceholderCompany(job, null)];
+        }
+        
+        return job;
+      })
+    );
+
+    // Extract successful results and handle failures
+    const jobsWithCompany = jobsWithCompanyResults.map((promiseResult, index) => {
+      if (promiseResult.status === 'fulfilled') {
+        return promiseResult.value;
+      } else {
+        // If job processing failed completely, return the original job with placeholder company
+        const originalJob = entries[index] as any;
+        if (originalJob) {
+          originalJob.company = [createPlaceholderCompany(originalJob, null)];
+          console.error(`Failed to process job ${originalJob.uid}:`, promiseResult.reason);
+          return originalJob;
+        }
+        // Fallback if entry doesn't exist - create a minimal job object
+        return {
+          uid: `error-${index}`,
+          title: 'Job (Error Loading)',
+          company: [createPlaceholderCompany({}, null)],
+        };
+      }
+    });
+
+    return jobsWithCompany; // Returning all job entries with company data
   }
 
   return [];
-  } catch (error) {
-    console.error('Error fetching jobs:', error);
-    // On error, trigger not-found page
-    notFound();
-  }
 }
 
 // Function to fetch a single job by UID
 export async function getJobByUid(uid: string) {
-  try {
-    const result = await stack
-      .contentType("job")
-      .entry(uid)
-      .includeReference("company")
-      .fetch();
+  const result = await stack
+    .contentType("job") // Specifying the content type as "job"
+    .entry(uid) // Accessing specific entry by UID
+    .fetch(); // Fetching the entry
 
-    if (result) {
-      if (process.env.NEXT_PUBLIC_CONTENTSTACK_PREVIEW === 'true') {
-        contentstack.Utils.addEditableTags(result as any, 'job', true);
-      }
-      const job = result as any;
-      normalizeJobCompany(job);
-      return result;
+  if (result) {
+    if (process.env.NEXT_PUBLIC_CONTENTSTACK_PREVIEW === 'true') {
+      contentstack.Utils.addEditableTags(result as any, 'job', true); // Adding editable tags for live preview if enabled
     }
 
-    notFound();
-  } catch (error) {
-    console.error('Error fetching job:', error);
-    // On error, trigger not-found page
-    notFound();
+    // Fetch company details if present
+    const job = result as any;
+    let companyUid: string | null = null;
+    
+    // Determine the company UID from different possible structures
+    if (job.company) {
+      if (Array.isArray(job.company) && job.company.length > 0) {
+        // Array of references
+        if (typeof job.company[0] === 'string') {
+          companyUid = job.company[0];
+        } else if (job.company[0].uid) {
+          companyUid = job.company[0].uid;
+        }
+      } else if (typeof job.company === 'string') {
+        // Direct UID string
+        companyUid = job.company;
+      } else if (typeof job.company === 'object' && !Array.isArray(job.company) && job.company.uid) {
+        // Object with uid property
+        companyUid = job.company.uid;
+      }
+    }
+    
+    // Fetch the full company data if we have a UID
+    if (companyUid) {
+      try {
+        // Add timeout wrapper to prevent hanging requests
+        const timeoutPromise = new Promise((_, reject) => 
+          setTimeout(() => reject(new Error('Request timeout')), 10000) // 10 second timeout
+        );
+        
+        const company = await Promise.race([
+          getCompanyByUid(companyUid),
+          timeoutPromise
+        ]) as any;
+        
+        if (company) {
+          job.company = [company]; // Store as array for consistency
+        } else {
+          // Create placeholder if company fetch returns null
+          job.company = [createPlaceholderCompany(job, companyUid)];
+        }
+      } catch (error: any) {
+        // Log error but don't fail the entire job
+        if (error.message !== 'Request timeout') {
+          console.error(`Failed to fetch company ${companyUid}:`, error.message || error);
+        } else {
+          console.error(`Timeout fetching company ${companyUid}`);
+        }
+        // Create placeholder company on error
+        job.company = [createPlaceholderCompany(job, companyUid)];
+      }
+    } else {
+      // Create a placeholder company for jobs without company data
+      job.company = [createPlaceholderCompany(job, null)];
+    }
+
+    return result; // Returning the fetched job
   }
+
+  return null;
 }
 
 // Function to fetch homepage content (singleton)
 export async function getHomepage() {
-  try {
-    const result = await stack
-      .contentType("homepage")
-      .entry()
-      .query()
-      .find();
+  const result = await stack
+    .contentType("homepage")
+    .entry()
+    .query()
+    .find();
 
-    if (result.entries && result.entries.length > 0) {
-      const entry = result.entries[0];
-      
-      if (process.env.NEXT_PUBLIC_CONTENTSTACK_PREVIEW === 'true') {
-        contentstack.Utils.addEditableTags(entry as any, 'homepage', true);
-      }
-
-      return entry;
+  if (result.entries && result.entries.length > 0) {
+    const entry = result.entries[0];
+    
+    if (process.env.NEXT_PUBLIC_CONTENTSTACK_PREVIEW === 'true') {
+      contentstack.Utils.addEditableTags(entry as any, 'homepage', true);
     }
 
-    // No homepage found, trigger not-found page
-    notFound();
-  } catch (error) {
-    console.error('Error fetching homepage:', error);
-    // On error, trigger not-found page
-    notFound();
+    return entry;
   }
+
+  return null;
 }
 
 // Function to fetch navigation content (singleton)
 export async function getNavigation() {
-  try {
-    const result = await stack
-      .contentType("navigation")
-      .entry()
-      .query()
-      .find();
+  const result = await stack
+    .contentType("navigation")
+    .entry()
+    .query()
+    .find();
 
-    if (result.entries && result.entries.length > 0) {
-      const entry = result.entries[0];
-      
-      if (process.env.NEXT_PUBLIC_CONTENTSTACK_PREVIEW === 'true') {
-        contentstack.Utils.addEditableTags(entry as any, 'navigation', true);
-      }
-
-      return entry;
+  if (result.entries && result.entries.length > 0) {
+    const entry = result.entries[0];
+    
+    if (process.env.NEXT_PUBLIC_CONTENTSTACK_PREVIEW === 'true') {
+      contentstack.Utils.addEditableTags(entry as any, 'navigation', true);
     }
 
-    // No navigation found, trigger not-found page
-    notFound();
-  } catch (error) {
-    console.error('Error fetching navigation:', error);
-    // On error, trigger not-found page
-    notFound();
+    return entry;
   }
+
+  return null;
 }
 
 // Function to fetch all blog posts
 export async function getBlogs(locale?: string) {
-  try {
-    // Create a stack instance with locale if provided
-    const stackInstance = locale 
-      ? contentstack.stack({
-          apiKey: process.env.NEXT_PUBLIC_CONTENTSTACK_API_KEY as string,
-          deliveryToken: process.env.NEXT_PUBLIC_CONTENTSTACK_DELIVERY_TOKEN as string,
-          environment: process.env.NEXT_PUBLIC_CONTENTSTACK_ENVIRONMENT as string,
-          region: region ? region : process.env.NEXT_PUBLIC_CONTENTSTACK_REGION as any,
-          host: process.env.NEXT_PUBLIC_CONTENTSTACK_CONTENT_DELIVERY || endpoints && endpoints.contentDelivery,
-          locale: locale,
+  // Create a stack instance with locale if provided
+  const stackInstance = locale 
+    ? contentstack.stack({
+        apiKey: process.env.NEXT_PUBLIC_CONTENTSTACK_API_KEY as string,
+        deliveryToken: process.env.NEXT_PUBLIC_CONTENTSTACK_DELIVERY_TOKEN as string,
+        environment: process.env.NEXT_PUBLIC_CONTENTSTACK_ENVIRONMENT as string,
+        region: region ? region : process.env.NEXT_PUBLIC_CONTENTSTACK_REGION as any,
+        host: process.env.NEXT_PUBLIC_CONTENTSTACK_CONTENT_DELIVERY || endpoints && endpoints.contentDelivery,
+        locale: locale,
+      })
+    : stack;
 
-        })
-      : stack;
+  const result = await stackInstance
+    .contentType("blog_post")
+    .entry()
+    .query()
+    .find();
 
-    const result = await stackInstance
-      .contentType("blog_post")
-      .entry()
-      .query()
-      .find();
-
-    if (result.entries) {
-      if (process.env.NEXT_PUBLIC_CONTENTSTACK_PREVIEW === 'true') {
-        result.entries.forEach((entry: any) => {
-          contentstack.Utils.addEditableTags(entry as any, 'blog_post', true);
-        });
-      }
-
-      return result.entries;
+  if (result.entries) {
+    if (process.env.NEXT_PUBLIC_CONTENTSTACK_PREVIEW === 'true') {
+      result.entries.forEach((entry: any) => {
+        contentstack.Utils.addEditableTags(entry as any, 'blog_post', true);
+      });
     }
 
-    return [];
-  } catch (error) {
-    console.error('Error fetching blogs:', error);
-    // On error, trigger not-found page
-    notFound();
+    return result.entries;
   }
+
+  return [];
 }
 
 // Function to fetch a single blog post by UID
 export async function getBlogByUid(uid: string, locale?: string) {
-  try {
-    // Create a stack instance with locale if provided
-    const stackInstance = locale 
-      ? contentstack.stack({
-          apiKey: process.env.NEXT_PUBLIC_CONTENTSTACK_API_KEY as string,
-          deliveryToken: process.env.NEXT_PUBLIC_CONTENTSTACK_DELIVERY_TOKEN as string,
-          environment: process.env.NEXT_PUBLIC_CONTENTSTACK_ENVIRONMENT as string,
-          region: region ? region : process.env.NEXT_PUBLIC_CONTENTSTACK_REGION as any,
-          host: process.env.NEXT_PUBLIC_CONTENTSTACK_CONTENT_DELIVERY || endpoints && endpoints.contentDelivery,
-          locale: locale,
+  // Create a stack instance with locale if provided
+  const stackInstance = locale 
+    ? contentstack.stack({
+        apiKey: process.env.NEXT_PUBLIC_CONTENTSTACK_API_KEY as string,
+        deliveryToken: process.env.NEXT_PUBLIC_CONTENTSTACK_DELIVERY_TOKEN as string,
+        environment: process.env.NEXT_PUBLIC_CONTENTSTACK_ENVIRONMENT as string,
+        region: region ? region : process.env.NEXT_PUBLIC_CONTENTSTACK_REGION as any,
+        host: process.env.NEXT_PUBLIC_CONTENTSTACK_CONTENT_DELIVERY || endpoints && endpoints.contentDelivery,
+        locale: locale,
+      })
+    : stack;
 
-        })
-      : stack;
+  const result = await stackInstance
+    .contentType("blog_post")
+    .entry(uid)
+    .fetch();
 
-    const result = await stackInstance
-      .contentType("blog_post")
-      .entry(uid)
-      .fetch();
-
-    if (result) {
-      if (process.env.NEXT_PUBLIC_CONTENTSTACK_PREVIEW === 'true') {
-        contentstack.Utils.addEditableTags(result as any, 'blog_post', true);
-      }
-
-      return result;
+  if (result) {
+    if (process.env.NEXT_PUBLIC_CONTENTSTACK_PREVIEW === 'true') {
+      contentstack.Utils.addEditableTags(result as any, 'blog_post', true);
     }
 
-    // No blog found, trigger not-found page
-    notFound();
-  } catch (error) {
-    console.error('Error fetching blog:', error);
-    // On error, trigger not-found page
-    notFound();
+    return result;
   }
+
+  return null;
 }
 
 // Function to fetch a blog post by slug
 export async function getBlogBySlug(slug: string) {
-  try {
-    const result = await stack
-      .contentType("blog_post")
-      .entry()
-      .query()
-      .where("slug", QueryOperation.EQUALS, slug)
-      .find();
+  const result = await stack
+    .contentType("blog_post")
+    .entry()
+    .query()
+    .where("slug", QueryOperation.EQUALS, slug)
+    .find();
 
-    if (result.entries && result.entries.length > 0) {
-      const entry = result.entries[0];
-      
-      if (process.env.NEXT_PUBLIC_CONTENTSTACK_PREVIEW === 'true') {
-        contentstack.Utils.addEditableTags(entry as any, 'blog_post', true);
-      }
-
-      return entry;
+  if (result.entries && result.entries.length > 0) {
+    const entry = result.entries[0];
+    
+    if (process.env.NEXT_PUBLIC_CONTENTSTACK_PREVIEW === 'true') {
+      contentstack.Utils.addEditableTags(entry as any, 'blog_post', true);
     }
 
-    // No blog found, trigger not-found page
-    notFound();
-  } catch (error) {
-    console.error('Error fetching blog by slug:', error);
-    // On error, trigger not-found page
-    notFound();
+    return entry;
   }
+
+  return null;
 }
 
 // Interface for user context used in personalization
@@ -459,22 +483,20 @@ export async function getPersonalizedBanner(
   userContext?: PersonalizationContext,
   locale?: string
 ) {
-  try {
-    // Create a stack instance with locale if provided
-    const stackInstance = locale 
-      ? contentstack.stack({
-          apiKey: process.env.NEXT_PUBLIC_CONTENTSTACK_API_KEY as string,
-          deliveryToken: process.env.NEXT_PUBLIC_CONTENTSTACK_DELIVERY_TOKEN as string,
-          environment: process.env.NEXT_PUBLIC_CONTENTSTACK_ENVIRONMENT as string,
-          region: region ? region : process.env.NEXT_PUBLIC_CONTENTSTACK_REGION as any,
-          host: process.env.NEXT_PUBLIC_CONTENTSTACK_CONTENT_DELIVERY || endpoints && endpoints.contentDelivery,
-          locale: locale,
+  // Create a stack instance with locale if provided
+  const stackInstance = locale 
+    ? contentstack.stack({
+        apiKey: process.env.NEXT_PUBLIC_CONTENTSTACK_API_KEY as string,
+        deliveryToken: process.env.NEXT_PUBLIC_CONTENTSTACK_DELIVERY_TOKEN as string,
+        environment: process.env.NEXT_PUBLIC_CONTENTSTACK_ENVIRONMENT as string,
+        region: region ? region : process.env.NEXT_PUBLIC_CONTENTSTACK_REGION as any,
+        host: process.env.NEXT_PUBLIC_CONTENTSTACK_CONTENT_DELIVERY || endpoints && endpoints.contentDelivery,
+        locale: locale,
+      })
+    : stack;
 
-        })
-      : stack;
-
-    // Build query with personalization
-    let query = stackInstance
+  // Build query with personalization
+  let query = stackInstance
       .contentType("personalized_banner")
       .entry()
       .query();
@@ -539,10 +561,6 @@ export async function getPersonalizedBanner(
   }
 
   return null;
-  } catch (error) {
-    console.error('Error fetching personalized banner:', error);
-    throw error;
-  }
 }
 
 // ============================================
@@ -658,12 +676,10 @@ export async function getLearningResourceBySlug(slug: string) {
       return entry;
     }
 
-    // No learning resource found, trigger not-found page
-    notFound();
+    return null;
   } catch (error) {
-    console.error('Error fetching learning resource:', error);
-    // On error, trigger not-found page
-    notFound();
+    console.warn('Learning resource not found:', error);
+    return null;
   }
 }
 

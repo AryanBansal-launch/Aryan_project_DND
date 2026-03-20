@@ -1,8 +1,9 @@
 #!/usr/bin/env node
 
-const url = process.argv[2];
-const concurrency = parseInt(process.argv[3] || '20');
-const totalRequests = parseInt(process.argv[4] || concurrency);
+const args = process.argv.slice(2).filter((a) => a !== '--verbose');
+const url = args[0];
+const concurrency = parseInt(args[1] || '20');
+const totalRequests = parseInt(args[2] || concurrency);
 
 if (!url) {
   console.error('Usage: node load-test.js <url> [concurrency] [requests]');
@@ -30,6 +31,35 @@ const results = {
 
 let completed = 0;
 
+function logFailureDetails(id, err, start, targetUrl) {
+  const duration = Date.now() - start;
+  const code = err?.code || err?.cause?.code || 'UNKNOWN';
+  const failurePhase = err?.cause?.code
+    ? (['ETIMEDOUT', 'ECONNRESET', 'ECONNREFUSED'].includes(err.cause.code)
+        ? (err.cause.code === 'ECONNREFUSED' ? 'before_connection' : 'during_transfer')
+        : 'unknown')
+    : err?.name === 'TypeError' && err?.message?.includes('fetch')
+      ? 'before_connection'
+      : 'unknown';
+
+  const logEntry = {
+    event: 'request_failed',
+    requestId: id,
+    timestamp: new Date().toISOString(),
+    requestInitiatedAt: new Date(start).toISOString(),
+    url: targetUrl,
+    durationMs: duration,
+    errorCode: code,
+    errorMessage: err?.message || String(err),
+    failurePhase,
+    hasCause: !!err?.cause,
+    causeCode: err?.cause?.code,
+    causeMessage: err?.cause?.message,
+  };
+  console.log('\n[HTTP-CLIENT] Failure log:', JSON.stringify(logEntry, null, 2));
+  console.log(`[HTTP-CLIENT] Phase: ${failurePhase} | Code: ${code} | Duration: ${duration}ms`);
+}
+
 async function makeRequest(id) {
   const start = Date.now();
 
@@ -53,12 +83,17 @@ async function makeRequest(id) {
     const code = err?.code || err?.cause?.code || 'UNKNOWN';
     results.errors[code] = (results.errors[code] || 0) + 1;
 
-    if (code === 'ETIMEDOUT') {
-      results.etimedout++;
-      console.log(`\n[${id}] :dart: ETIMEDOUT after ${duration}ms`);
-    } else if (results.failed <= 5) {
-      console.log(`\n[${id}] :x: ${code}: ${err?.message}`);
-    }
+    if (code === 'ETIMEDOUT') {
+      results.etimedout++;
+    }
+
+    // Log detailed failure info for first 10 failures or with --verbose
+    const verbose = process.argv.includes('--verbose');
+    if (verbose || results.failed <= 10) {
+      logFailureDetails(id, err, start, url);
+    } else if (code === 'ETIMEDOUT' && results.etimedout <= 3) {
+      logFailureDetails(id, err, start, url);
+    }
 
     process.stdout.write(`\r[${completed}/${totalRequests}] :white_check_mark: ${results.successful} | :x: ${results.failed} | :dart: ETIMEDOUT: ${results.etimedout}  `);
 
