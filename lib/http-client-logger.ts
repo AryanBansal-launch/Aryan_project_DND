@@ -5,8 +5,6 @@
  * - When the request is initiated
  * - Where the timeout/failure occurs
  * - Whether the failure happens before a connection is fully established
- *
- * Enable via: CONTENTSTACK_HTTP_DEBUG=true or NEXT_PUBLIC_CONTENTSTACK_HTTP_DEBUG=true
  */
 
 export interface HttpFailureLog {
@@ -22,10 +20,6 @@ export interface HttpFailureLog {
   hasResponseObject: boolean;
   rawError?: string;
 }
-
-const isDebugEnabled = () =>
-  process.env.CONTENTSTACK_HTTP_DEBUG === "true" ||
-  process.env.NEXT_PUBLIC_CONTENTSTACK_HTTP_DEBUG === "true";
 
 function formatTimestamp(date: Date) {
   return date.toISOString();
@@ -52,7 +46,7 @@ function getFailurePhase(error: any): HttpFailureLog["failurePhase"] {
  * Call this on the Contentstack stack client when debugging HTTP issues.
  */
 export function addHttpClientLogging(client: any): void {
-  if (!isDebugEnabled() || typeof client?.interceptors?.request?.use !== "function") {
+  if (typeof client?.interceptors?.request?.use !== "function") {
     return;
   }
 

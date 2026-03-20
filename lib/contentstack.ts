@@ -7,7 +7,7 @@ import ContentstackLivePreview, { IStackSdk } from "@contentstack/live-preview-u
 // Importing the Page type definition 
 import { Page } from "./types";
 
-// HTTP client logging for debugging failed requests (enable via CONTENTSTACK_HTTP_DEBUG=true)
+// HTTP client logging for debugging failed requests
 import { addHttpClientLogging } from "./http-client-logger";
 
 // helper functions from private package to retrieve Contentstack endpoints in a convienient way
@@ -50,7 +50,7 @@ export const stack = contentstack.stack({
   }
 });
 
-// Add HTTP client logging for failed requests (enable via CONTENTSTACK_HTTP_DEBUG=true)
+// Add HTTP client logging for failed requests
 if (typeof window === "undefined") {
   const client = stack.getClient();
   addHttpClientLogging(client);
