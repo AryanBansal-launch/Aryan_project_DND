@@ -50,9 +50,23 @@ export const stack = contentstack.stack({
   }
 });
 
-// Add HTTP client logging for failed requests
+// Force IPv4 DNS resolution on the server side via httpAgent
 if (typeof window === "undefined") {
+  /* eslint-disable @typescript-eslint/no-require-imports */
+  const dns = require("dns");
+  const http = require("http");
+  const https = require("https");
+  /* eslint-enable @typescript-eslint/no-require-imports */
+
+  const ipv4Lookup = (hostname: string, options: any, callback: any) => {
+    dns.lookup(hostname, { ...options, family: 4 }, callback);
+  };
+
   const client = stack.getClient();
+  client.defaults.httpAgent = new http.Agent({ lookup: ipv4Lookup });
+  client.defaults.httpsAgent = new https.Agent({ lookup: ipv4Lookup });
+
+  // Add HTTP client logging for failed requests
   addHttpClientLogging(client);
 }
 
@@ -151,107 +165,55 @@ function createPlaceholderCompany(job: any, companyUid: string | null) {
   };
 }
 
-// Function to fetch all jobs
+// Helper to normalize company data (handles includeReference response - full object or reference)
+function normalizeJobCompany(job: any): void {
+  if (!job.company) {
+    job.company = [createPlaceholderCompany(job, null)];
+    return;
+  }
+  const raw = job.company;
+  // Full company object(s) from includeReference - normalize to [company]
+  if (Array.isArray(raw) && raw.length > 0) {
+    if (typeof raw[0] === 'object' && raw[0]?.uid) {
+      job.company = [raw[0]];
+      return;
+    }
+    if (typeof raw[0] === 'string') {
+      job.company = [createPlaceholderCompany(job, raw[0])];
+      return;
+    }
+  }
+  if (typeof raw === 'object' && !Array.isArray(raw) && raw.uid) {
+    job.company = [raw];
+    return;
+  }
+  if (typeof raw === 'string') {
+    job.company = [createPlaceholderCompany(job, raw)];
+    return;
+  }
+  job.company = [createPlaceholderCompany(job, null)];
+}
+
+// Function to fetch all jobs (optimized: company embedded via includeReference - 1 API call instead of 1+N)
 export async function getJobs() {
   const result = await stack
-    .contentType("job") // Specifying the content type as "job"
-    .entry() // Accessing the entry
-    .query() // Creating a query
-    .find(); // Executing the query
+    .contentType("job")
+    .entry()
+    .includeReference("company")
+    .query()
+    .find();
 
   if (result.entries) {
     const entries = result.entries;
-    
+
     if (process.env.NEXT_PUBLIC_CONTENTSTACK_PREVIEW === 'true') {
       entries.forEach((entry: any) => {
-        contentstack.Utils.addEditableTags(entry as any, 'job', true); // Adding editable tags for live preview if enabled
+        contentstack.Utils.addEditableTags(entry as any, 'job', true);
       });
     }
 
-    // Fetch company details for each job
-    // Use Promise.allSettled to handle failures gracefully
-    const jobsWithCompanyResults = await Promise.allSettled(
-      entries.map(async (job: any) => {
-        let companyUid: string | null = null;
-        
-        // Determine the company UID from different possible structures
-        if (job.company) {
-          if (Array.isArray(job.company) && job.company.length > 0) {
-            // Array of references
-            if (typeof job.company[0] === 'string') {
-              companyUid = job.company[0];
-            } else if (job.company[0].uid) {
-              companyUid = job.company[0].uid;
-            }
-          } else if (typeof job.company === 'string') {
-            // Direct UID string
-            companyUid = job.company;
-          } else if (typeof job.company === 'object' && !Array.isArray(job.company) && job.company.uid) {
-            // Object with uid property
-            companyUid = job.company.uid;
-          }
-        }
-        
-        // Fetch the full company data if we have a UID
-        if (companyUid) {
-          try {
-            // Add timeout wrapper to prevent hanging requests
-            const timeoutPromise = new Promise((_, reject) => 
-              setTimeout(() => reject(new Error('Request timeout')), 10000) // 10 second timeout
-            );
-            
-            const company = await Promise.race([
-              getCompanyByUid(companyUid),
-              timeoutPromise
-            ]) as any;
-            
-            if (company) {
-              job.company = [company]; // Store as array for consistency
-            } else {
-              // Create placeholder if company fetch returns null
-              job.company = [createPlaceholderCompany(job, companyUid)];
-            }
-          } catch (error: any) {
-            // Log error but don't fail the entire job
-            if (error.message !== 'Request timeout') {
-              console.error(`Failed to fetch company ${companyUid}:`, error.message || error);
-            } else {
-              console.error(`Timeout fetching company ${companyUid}`);
-            }
-            // Create placeholder company on error
-            job.company = [createPlaceholderCompany(job, companyUid)];
-          }
-        } else {
-          // Create a placeholder company for jobs without company data
-          job.company = [createPlaceholderCompany(job, null)];
-        }
-        
-        return job;
-      })
-    );
-
-    // Extract successful results and handle failures
-    const jobsWithCompany = jobsWithCompanyResults.map((promiseResult, index) => {
-      if (promiseResult.status === 'fulfilled') {
-        return promiseResult.value;
-      } else {
-        // If job processing failed completely, return the original job with placeholder company
-        const originalJob = entries[index] as any;
-        if (originalJob) {
-          originalJob.company = [createPlaceholderCompany(originalJob, null)];
-          console.error(`Failed to process job ${originalJob.uid}:`, promiseResult.reason);
-          return originalJob;
-        }
-        // Fallback if entry doesn't exist - create a minimal job object
-        return {
-          uid: `error-${index}`,
-          title: 'Job (Error Loading)',
-          company: [createPlaceholderCompany({}, null)],
-        };
-      }
-    });
-
-    return jobsWithCompany; // Returning all job entries with company data
+    entries.forEach((job: any) => normalizeJobCompany(job));
+    return entries;
   }
 
   return [];
@@ -260,72 +222,18 @@ export async function getJobs() {
 // Function to fetch a single job by UID
 export async function getJobByUid(uid: string) {
   const result = await stack
-    .contentType("job") // Specifying the content type as "job"
-    .entry(uid) // Accessing specific entry by UID
-    .fetch(); // Fetching the entry
+    .contentType("job")
+    .entry(uid)
+    .includeReference("company")
+    .fetch();
 
   if (result) {
     if (process.env.NEXT_PUBLIC_CONTENTSTACK_PREVIEW === 'true') {
-      contentstack.Utils.addEditableTags(result as any, 'job', true); // Adding editable tags for live preview if enabled
+      contentstack.Utils.addEditableTags(result as any, 'job', true);
     }
-
-    // Fetch company details if present
     const job = result as any;
-    let companyUid: string | null = null;
-    
-    // Determine the company UID from different possible structures
-    if (job.company) {
-      if (Array.isArray(job.company) && job.company.length > 0) {
-        // Array of references
-        if (typeof job.company[0] === 'string') {
-          companyUid = job.company[0];
-        } else if (job.company[0].uid) {
-          companyUid = job.company[0].uid;
-        }
-      } else if (typeof job.company === 'string') {
-        // Direct UID string
-        companyUid = job.company;
-      } else if (typeof job.company === 'object' && !Array.isArray(job.company) && job.company.uid) {
-        // Object with uid property
-        companyUid = job.company.uid;
-      }
-    }
-    
-    // Fetch the full company data if we have a UID
-    if (companyUid) {
-      try {
-        // Add timeout wrapper to prevent hanging requests
-        const timeoutPromise = new Promise((_, reject) => 
-          setTimeout(() => reject(new Error('Request timeout')), 10000) // 10 second timeout
-        );
-        
-        const company = await Promise.race([
-          getCompanyByUid(companyUid),
-          timeoutPromise
-        ]) as any;
-        
-        if (company) {
-          job.company = [company]; // Store as array for consistency
-        } else {
-          // Create placeholder if company fetch returns null
-          job.company = [createPlaceholderCompany(job, companyUid)];
-        }
-      } catch (error: any) {
-        // Log error but don't fail the entire job
-        if (error.message !== 'Request timeout') {
-          console.error(`Failed to fetch company ${companyUid}:`, error.message || error);
-        } else {
-          console.error(`Timeout fetching company ${companyUid}`);
-        }
-        // Create placeholder company on error
-        job.company = [createPlaceholderCompany(job, companyUid)];
-      }
-    } else {
-      // Create a placeholder company for jobs without company data
-      job.company = [createPlaceholderCompany(job, null)];
-    }
-
-    return result; // Returning the fetched job
+    normalizeJobCompany(job);
+    return result;
   }
 
   return null;
