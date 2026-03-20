@@ -9,6 +9,8 @@ import { Page } from "./types";
 
 // HTTP client logging for debugging failed requests
 import { addHttpClientLogging } from "./http-client-logger";
+// Socket diagnostics (IPv4/IPv6) for Contentstack SDK connections
+import { createLoggingAgents } from "./contentstack-socket-diagnostics";
 
 // helper functions from private package to retrieve Contentstack endpoints in a convienient way
 import { getContentstackEndpoints, getRegionForString } from "@timbenniks/contentstack-endpoints";
@@ -50,21 +52,13 @@ export const stack = contentstack.stack({
   }
 });
 
-// Force IPv4 DNS resolution on the server side via httpAgent
 if (typeof window === "undefined") {
-  /* eslint-disable @typescript-eslint/no-require-imports */
-  const dns = require("dns");
-  const http = require("http");
-  const https = require("https");
-  /* eslint-enable @typescript-eslint/no-require-imports */
-
-  const ipv4Lookup = (hostname: string, options: any, callback: any) => {
-    dns.lookup(hostname, { ...options, family: 4 }, callback);
-  };
-
   const client = stack.getClient();
-  client.defaults.httpAgent = new http.Agent({ lookup: ipv4Lookup });
-  client.defaults.httpsAgent = new https.Agent({ lookup: ipv4Lookup });
+
+  // Socket diagnostics: log IPv4/IPv6 when Contentstack connections are established
+  const { httpAgent, httpsAgent } = createLoggingAgents();
+  client.defaults.httpAgent = httpAgent;
+  client.defaults.httpsAgent = httpsAgent;
 
   // Add HTTP client logging for failed requests
   addHttpClientLogging(client);

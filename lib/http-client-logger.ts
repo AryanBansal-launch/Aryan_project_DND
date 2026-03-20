@@ -11,6 +11,7 @@ export interface HttpFailureLog {
   timestamp: string;
   requestInitiatedAt: string;
   failurePhase: "before_connection" | "during_transfer" | "after_response";
+  protocol: string;
   errorCode: string;
   errorMessage: string;
   url: string;
@@ -23,6 +24,22 @@ export interface HttpFailureLog {
 
 function formatTimestamp(date: Date) {
   return date.toISOString();
+}
+
+/**
+ * Derives protocol (http/https) from Axios config.
+ * Contentstack core sets baseURL as "https://host..." or "http://host..." (when insecure).
+ */
+function getProtocol(config: any): string {
+  const base = config?.baseURL || config?.url || "";
+  if (typeof base === "string") {
+    if (base.startsWith("https://")) return "https";
+    if (base.startsWith("http://")) return "http";
+  }
+  // Axios uses httpsAgent for HTTPS; if only httpAgent, it's HTTP
+  if (config?.httpsAgent !== undefined && config?.httpsAgent !== false) return "https";
+  if (config?.httpAgent && !config?.httpsAgent) return "http";
+  return "https"; // Contentstack CDA defaults to HTTPS
 }
 
 /**
@@ -59,13 +76,15 @@ export function addHttpClientLogging(client: any): void {
       config._httpLogRequestId = requestId;
       requestTimestamps.set(requestId, Date.now());
 
+      const fullUrl = config.baseURL ? `${config.baseURL}${config.url || ""}` : config.url;
       const logEntry = {
         event: "request_initiated",
         timestamp: formatTimestamp(new Date()),
         requestId,
+        protocol: getProtocol(config),
         url: config.url || config.baseURL,
         method: (config.method || "get").toUpperCase(),
-        fullUrl: config.baseURL ? `${config.baseURL}${config.url || ""}` : config.url,
+        fullUrl,
       };
 
       console.log("[HTTP-CLIENT] Request initiated:", JSON.stringify(logEntry, null, 2));
@@ -85,9 +104,11 @@ export function addHttpClientLogging(client: any): void {
         const startedAt = requestTimestamps.get(requestId);
         if (startedAt) {
           const durationMs = Date.now() - startedAt;
-          console.log(
-            `[HTTP-CLIENT] Request completed: ${response?.config?.url} - ${response?.status} (${durationMs}ms)`
-          );
+      const protocol = getProtocol(response?.config);
+      const path = response?.config?.url || response?.config?.baseURL;
+      console.log(
+        `[HTTP-CLIENT] Request completed: [${protocol}] ${path} - ${response?.status} (${durationMs}ms)`
+      );
         }
         requestTimestamps.delete(requestId);
       }
@@ -103,6 +124,7 @@ export function addHttpClientLogging(client: any): void {
         timestamp: formatTimestamp(new Date()),
         requestInitiatedAt: startedAt ? formatTimestamp(new Date(startedAt)) : "unknown",
         failurePhase: getFailurePhase(error),
+        protocol: getProtocol(config),
         errorCode: error?.code || error?.cause?.code || "UNKNOWN",
         errorMessage: error?.message || String(error),
         url: config?.url || config?.baseURL || "unknown",
@@ -126,7 +148,7 @@ export function addHttpClientLogging(client: any): void {
             ? "DURING transfer (timeout/connection reset - request was sent)"
             : "AFTER response received (HTTP error)";
       console.error(
-        `[HTTP-CLIENT] Failure phase: ${phaseDesc} | Code: ${failureLog.errorCode} | Duration: ${failureLog.durationMs ?? "?"}ms`
+        `[HTTP-CLIENT] Failure phase: ${phaseDesc} | Protocol: ${failureLog.protocol} | Code: ${failureLog.errorCode} | Duration: ${failureLog.durationMs ?? "?"}ms`
       );
 
       return Promise.reject(error);
