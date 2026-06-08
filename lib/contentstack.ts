@@ -4,13 +4,8 @@ import contentstack, { QueryOperation } from "@contentstack/delivery-sdk";
 // Importing Contentstack Live Preview utilities and stack SDK 
 import ContentstackLivePreview, { IStackSdk } from "@contentstack/live-preview-utils";
 
-// Importing the Page type definition 
+// Importing the Page type definition
 import { Page } from "./types";
-
-// HTTP client logging for debugging failed requests
-import { addHttpClientLogging } from "./http-client-logger";
-// Socket diagnostics (IPv4/IPv6) for Contentstack SDK connections
-import { createLoggingAgents } from "./contentstack-socket-diagnostics";
 
 // helper functions from private package to retrieve Contentstack endpoints in a convienient way
 import { getContentstackEndpoints, getRegionForString } from "@timbenniks/contentstack-endpoints";
@@ -51,18 +46,6 @@ export const stack = contentstack.stack({
     host: process.env.NEXT_PUBLIC_CONTENTSTACK_PREVIEW_HOST || endpoints && endpoints.preview
   }
 });
-
-if (typeof window === "undefined") {
-  const client = stack.getClient();
-
-  // Socket diagnostics: log IPv4/IPv6 when Contentstack connections are established
-  const { httpAgent, httpsAgent } = createLoggingAgents();
-  client.defaults.httpAgent = httpAgent;
-  client.defaults.httpsAgent = httpsAgent;
-
-  // Add HTTP client logging for failed requests
-  addHttpClientLogging(client);
-}
 
 // Initialize live preview functionality
 export function initLivePreview() {
